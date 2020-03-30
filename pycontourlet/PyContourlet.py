@@ -27,18 +27,18 @@ import pdb
 # Laplacian Pyramid
 def lpdec(x, h, g):
     """ LPDEC   Laplacian Pyramid Decomposition
-    
+
     [c, d] = lpdec(x, h, g)
-    
+
     Input:
     x:      input image
     h, g:   two lowpass filters for the Laplacian pyramid
-    
+
     Output:
     c:      coarse image at half size
     d:      detail image at full size
-    
-    See also:	LPREC, PDFBDEC"""
+
+    See also:   LPREC, PDFBDEC"""
 
     # Lowpass filter and downsample
     xlo = sefilter2(x, h, h, 'per')
@@ -56,21 +56,21 @@ def lpdec(x, h, g):
 
 def lprec(c, d, h, g):
     """ LPDEC   Laplacian Pyramid Reconstruction
-    
+
     x = lprec(c, d, h, g)
-    
+
     Input:
     c:      coarse image at half size
     d:      detail image at full size
     h, g:   two lowpass filters for the Laplacian pyramid
-    
+
     Output:
     x:      reconstructed image
-    
+
     Note:     This uses a new reconstruction method by Do and Vetterli,
     Framming pyramids, IEEE Trans. on Sig Proc., Sep. 2003.
-    
-    See also:	LPDEC, PDFBREC"""
+
+    See also:   LPDEC, PDFBREC"""
 
     # First, filter and downsample the detail image
     xhi = sefilter2(d, h, h, 'per')
@@ -88,7 +88,7 @@ def lprec(c, d, h, g):
 
     # Final combination
     x = xlo + d
-    
+
     return x
 
 # Wavelet Filter Bank
@@ -122,20 +122,20 @@ def wfb2dec(x, h, g):
 
     # Row-wise filtering
     x_L = rowfiltering(x, h0, ext_h0)
-    x_L = x_L[:,::2]  
+    x_L = x_L[:,::2]
 
     x_H = rowfiltering(x, h1, ext_h1)
-    x_H = x_H[:,::2] 
+    x_H = x_H[:,::2]
 
     # Column-wise filtering
     x_LL = rowfiltering(x_L.T, h0, ext_h0).T
-    x_LL = x_LL[::2,:] 
+    x_LL = x_LL[::2,:]
 
     x_LH = rowfiltering(x_L.T, h1, ext_h1).T
-    x_LH = x_LH[::2,:] 
+    x_LH = x_LH[::2,:]
 
     x_HL = rowfiltering(x_H.T, h0, ext_h0).T
-    x_HL = x_HL[::2,:] 
+    x_HL = x_HL[::2,:]
 
     x_HH = rowfiltering(x_H.T, h1, ext_h1).T
     x_HH = x_HH[::2,:]
@@ -191,6 +191,7 @@ def wfb2rec(x_LL, x_LH, x_HL, x_HH, h, g):
     x = x + rowfiltering(x_B, g1, ext_g1)
 
     return x
+
 # Internal function: Row-wise filtering with
 # border handling (used in wfb2dec and wfb2rec) 
 def rowfiltering(x, f, ext1):
@@ -202,20 +203,20 @@ def rowfiltering(x, f, ext1):
 # Directional Filter Bank
 def dfbdec(x, fname, n):
     """ DFBDEC   Directional Filterbank Decomposition
-    
+
     y = dfbdec(x, fname, n)
-    
+
     Input:
     x:      input image
     fname:  filter name to be called by DFILTERS
     n:      number of decomposition tree levels
-    
+
     Output:
-    y:	    subband images in a cell vector of length 2^n
-    
+    y:      subband images in a cell vector of length 2^n
+
     Note:
     This is the general version that works with any FIR filters
-    
+
     See also: DFBREC, FBDEC, DFILTERS"""
 
     if (n != round(n)) or (n < 0):
@@ -226,7 +227,7 @@ def dfbdec(x, fname, n):
         y = [None]
         y[0] = x.copy()
         return y
-    
+
     # Get the diamond-shaped filters
     h0, h1 = dfilters(fname, 'd')
 
@@ -275,16 +276,16 @@ def dfbdec(x, fname, n):
 
 def dfbrec(y, fname):
     """ DFBREC   Directional Filterbank Reconstruction
-    
+
     x = dfbrec(y, fname)
-    
+
     Input:
-    y:	    subband images in a cell vector of length 2^n
+    y:      subband images in a cell vector of length 2^n
     fname:  filter name to be called by DFILTERS
-    
+
     Output:
-    x:	    reconstructed image
-    
+    x:      reconstructed image
+
     See also: DFBDEC, FBREC, DFILTERS"""
 
     n = int(log2(len(y)))
@@ -329,20 +330,20 @@ def dfbrec(y, fname):
             y = [[None]]*2**(l-1)
 
             # The first half channels use R1 and R2
-            for k in xrange(0,2**(l-2)): 
+            for k in xrange(0,2**(l-2)):
                 i = mod(k, 2)
                 y[k] = fbrec(y_old[2*k], y_old[2*k+1],
                              f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
-            for k in xrange(2**(l-2),2**(l-1)): 
+            for k in xrange(2**(l-2),2**(l-1)):
                 i = mod(k, 2) + 2
                 y[k] = fbrec(y_old[2*k], y_old[2*k+1],
                              f0[i], f1[i], 'pq', i, 'per')
-        
+
         # Second level
         x0 = fbrec(y[0], y[1], k0, k1, 'q', '2c', 'qper_col')
         x1 = fbrec(y[2], y[3], k0, k1, 'q', '2c', 'qper_col')
-        
+
         # First level
         x = fbrec(x0, x1, k0, k1, 'q', '1r', 'per')
 
@@ -350,17 +351,17 @@ def dfbrec(y, fname):
 
 def dfbdec_l(x, f, n):
     """ DFBDEC_L   Directional Filterbank Decomposition using Ladder Structure
-    
+
     y = dfbdec_l(x, f, n)
-    
+
     Input:
-    x:	input image
-    f:	filter in the ladder network structure,
+    x:  input image
+    f:  filter in the ladder network structure,
     can be a string naming a standard filter (see LDFILTER)
-    n:	number of decomposition tree levels
-    
+    n:  number of decomposition tree levels
+
     Output:
-    y:	subband images in a cell array (of size 2^n x 1)"""
+    y:  subband images in a cell array (of size 2^n x 1)"""
 
     if (n != round(n)) or (n < 0):
         print 'Number of decomposition levels must be a non-negative integer'
@@ -400,8 +401,8 @@ def dfbdec_l(x, f, n):
             for k in xrange(0,2**(l-2)):
                 i = mod(k, 2)
                 y[2*k+1], y[2*k] = fbdec_l(y_old[k], f.copy(), 'p', i, 'per')
-                
-                # The second half channels use R3 and R4        
+
+                # The second half channels use R3 and R4
             for k in xrange(2**(l-2),2**(l-1)):
                 i = mod(k, 2) + 2
                 y[2*k+1], y[2*k] = fbdec_l(y_old[k], f.copy(), 'p', i, 'per')
@@ -417,16 +418,16 @@ def dfbrec_l(y, f):
     """ DFBREC_L   Directional Filterbank Reconstruction using Ladder Structure
 
     x = dfbrec_l(y, fname)
-    
+
     Input:
-    y:	subband images in a cell vector of length 2^n
-    f:	filter in the ladder network structure,
+    y:  subband images in a cell vector of length 2^n
+    f:  filter in the ladder network structure,
     can be a string naming a standard filter (see LDFILTER)
-    
+
     Output:
-    x:	reconstructed image
-    
-    See also:	DFBDEC, FBREC, DFILTERS"""
+    x:  reconstructed image
+
+    See also:   DFBDEC, FBREC, DFILTERS"""
 
     n = int(log2(len(y)))
 
@@ -453,11 +454,11 @@ def dfbrec_l(y, f):
         x = fbrec_l(y[0], y[1], f.copy(), 'q', '1r', 'qper_col')
     else:
         # For the cases that n >= 2
-        # Recombine subband outputs to the next level        
+        # Recombine subband outputs to the next level
         for l in xrange(n,2,-1):
             y_old = y[:]
             y = [[None]]*2**(l-1)
-        
+
             # The first half channels use R0 and R1
             for k in xrange(0,2**(l-2)): 
                 i = mod(k, 2)
@@ -479,28 +480,28 @@ def fbdec(x, h0, h1, type1, type2, extmod='per'):
     """ FBDEC   Two-channel 2D Filterbank Decomposition
 
     [y0, y1] = fbdec(x, h0, h1, type1, type2, [extmod])
-    
+
     Input:
-    x:	input image
-    h0, h1:	two decomposition 2D filters
-    type1:	'q', 'p' or 'pq' for selecting quincunx or parallelogram
+    x:  input image
+    h0, h1: two decomposition 2D filters
+    type1:  'q', 'p' or 'pq' for selecting quincunx or parallelogram
     downsampling matrix
-    type2:	second parameter for selecting the filterbank type
+    type2:  second parameter for selecting the filterbank type
     If type1 == 'q' then type2 is one of {'1r', '1c', '2r', '2c'}
     If type1 == 'p' then type2 is one of {0, 1, 2, 3}
     Those are specified in QDOWN and PDOWN
     If type1 == 'pq' then same as 'p' except that
-    the paralellogram matrix is replaced by a combination 
+    the paralellogram matrix is replaced by a combination
     of a  resampling and a quincunx matrices
-    extmod:	[optional] extension mode (default is 'per')
-    
+    extmod: [optional] extension mode (default is 'per')
+
     Output:
-    y0, y1:	two result subband images
-    
-    Note:		This is the general implementation of 2D two-channel
+    y0, y1: two result subband images
+
+    Note:       This is the general implementation of 2D two-channel
     filterbank
-    
-    See also:	FBDEC_SP """
+
+    See also:   FBDEC_SP """
 
     # For parallegoram filterbank using quincunx downsampling, resampling is
     # applied before filtering
@@ -517,7 +518,7 @@ def fbdec(x, h0, h1, type1, type2, extmod='per'):
             R[0] = array([[1, 1], [0, 1]])
             R[1] = array([[1, -1], [0, 1]])
             R[2] = array([[1, 0], [1, 1]])
-            R[3] = array([[1, 0], [-1, 1]])	
+            R[3] = array([[1, 0], [-1, 1]]) 
             shift = R[type2] * shift
     else:
         shift = array([[0], [0]])
@@ -527,46 +528,46 @@ def fbdec(x, h0, h1, type1, type2, extmod='per'):
     # Downsampling
     if type1 == 'q':
         # Quincunx downsampling
-    	y0 = qdown(y0, type2)
-    	y1 = qdown(y1, type2)
+        y0 = qdown(y0, type2)
+        y1 = qdown(y1, type2)
     elif type1 == 'p':
-    	# Parallelogram downsampling
-    	y0 = pdown(y0, type2)
-    	y1 = pdown(y1, type2)
+        # Parallelogram downsampling
+        y0 = pdown(y0, type2)
+        y1 = pdown(y1, type2)
     elif type1 == 'pq':
-    	# Quincux downsampling using the equipvalent type
-    	pqtype = ['1r', '2r', '2c', '1c']
+        # Quincux downsampling using the equipvalent type
+        pqtype = ['1r', '2r', '2c', '1c']
         y0 = qdown(y0, pqtype[type2])
-    	y1 = qdown(y1, pqtype[type2])
+        y1 = qdown(y1, pqtype[type2])
     else:
-    	print 'Invalid input type1'
+        print 'Invalid input type1'
     return y0, y1
 
 def fbrec(y0, y1, h0, h1, type1, type2, extmod='per'):
     """ FBREC   Two-channel 2D Filterbank Reconstruction
 
     x = fbrec(y0, y1, h0, h1, type1, type2, [extmod])
-    
+
     Input:
-    y0, y1:	two input subband images
-    h0, h1:	two reconstruction 2D filters
-    type1:	'q', 'p' or 'pq' for selecting quincunx or parallelogram
+    y0, y1: two input subband images
+    h0, h1: two reconstruction 2D filters
+    type1:  'q', 'p' or 'pq' for selecting quincunx or parallelogram
     upsampling matrix
-    type2:	second parameter for selecting the filterbank type
+    type2:  second parameter for selecting the filterbank type
     If type1 == 'q' then type2 is one of {'1r', '1c', '2r', '2c'}
     If type1 == 'p' then type2 is one of {0, 1, 2, 3}
     Those are specified in QUP and PUP
     If type1 == 'pq' then same as 'p' except that
-    the paralellogram matrix is replaced by a combination 
+    the paralellogram matrix is replaced by a combination
     of a quincunx and a resampling matrices
-    extmod:	[optional] extension mode (default is 'per')
-    
+    extmod: [optional] extension mode (default is 'per')
+
     Output:
-    x:	reconstructed image
-    
-    Note:	This is the general case of 2D two-channel filterbank
-    
-    See also:	FBDEC"""
+    x:  reconstructed image
+
+    Note:   This is the general case of 2D two-channel filterbank
+
+    See also:   FBDEC"""
 
     # Upsampling
     if type1 == 'q':
@@ -579,11 +580,11 @@ def fbrec(y0, y1, h0, h1, type1, type2, extmod='per'):
         y1 = pup(y1, type2)
     elif type1 == 'pq':
         # Quincux upsampling using the equivalent type
-    	pqtype = ['1r', '2r', '2c', '1c']
+        pqtype = ['1r', '2r', '2c', '1c']
         y0 = qup(y0, pqtype[type2])
-    	y1 = qup(y1, pqtype[type2])
+        y1 = qup(y1, pqtype[type2])
     else:
-    	print 'Invalid input type1'
+        print 'Invalid input type1'
 
     # Stagger sampling if filter is odd-size
     if all(mod(h1.shape, 2)):
@@ -594,12 +595,12 @@ def fbrec(y0, y1, h0, h1, type1, type2, extmod='per'):
             R[0] = array([[1, 1], [0, 1]])
             R[1] = array([[1, -1], [0, 1]])
             R[2] = array([[1, 0], [1, 1]])
-            R[3] = array([[1, 0], [-1, 1]])	
+            R[3] = array([[1, 0], [-1, 1]])
             shift = R[type2] * shift
     else:
         shift = array([[0],[0]])
 
-    # Dimension that has even size filter needs to be adjusted to obtain 
+    # Dimension that has even size filter needs to be adjusted to obtain
     # perfect reconstruction with zero shift
     adjust0 = mod(array([h0.shape]) + 1, 2).T
     adjust1 = mod(array([h1.shape]) + 1, 2).T
@@ -623,26 +624,26 @@ def fbdec_l(x, f, type1, type2, extmod='per'):
     """ FBDEC_L   Two-channel 2D Filterbank Decomposition using Ladder Structure
 
     [y0, y1] = fbdec_l(x, f, type1, type2, [extmod])
-    
+
     Input:
-    x:	input image
-    f:	filter in the ladder network structure
-    type1:	'q' or 'p' for selecting quincunx or parallelogram
+    x:  input image
+    f:  filter in the ladder network structure
+    type1:  'q' or 'p' for selecting quincunx or parallelogram
     downsampling matrix
-    type2:	second parameter for selecting the filterbank type
+    type2:  second parameter for selecting the filterbank type
     If type1 == 'q' then type2 is one of {'1r', '1c', '2r', '2c'}
     ({1, 2, 0, 3} can also be used as equivalent)
     If type1 == 'p' then type2 is one of {0, 1, 2, 3}
     Those are specified in QPDEC and PPDEC
-    extmod:	[optional] extension mode (default is 'per')
+    extmod: [optional] extension mode (default is 'per')
     This refers to polyphase components.
-    
+
     Output:
-    y0, y1:	two result subband images
-    
-    Note:		This is also called the lifting scheme
-    
-    See also:	FBDEC, FBREC_L"""
+    y0, y1: two result subband images
+
+    Note:       This is also called the lifting scheme
+
+    See also:   FBDEC, FBREC_L"""
 
     # Modulate f
     f[:,::2] = -f[:,::2]
@@ -656,7 +657,7 @@ def fbdec_l(x, f, type1, type2, extmod='per'):
         p0, p1 = qpdec(x, type2)
     elif str.lower(type1[0]) == 'p':
         # Parallelogram polyphase decomposition
-        p0, p1 = ppdec(x, type2)	
+        p0, p1 = ppdec(x, type2)
     else:
         print 'Invalid argument type1'
 
@@ -668,29 +669,29 @@ def fbdec_l(x, f, type1, type2, extmod='per'):
 
 def fbrec_l(y0, y1, f, type1, type2, extmod='per'):
     """ FBREC_L   Two-channel 2D Filterbank Reconstruction
-    using Ladder Structure 
+    using Ladder Structure
 
     x = fbrec_l(y0, y1, f, type1, type2, [extmod])
-    
+
     Input:
-    y0, y1:	two input subband images
-    f:	filter in the ladder network structure
-    type1:	'q' or 'p' for selecting quincunx or parallelogram
+    y0, y1: two input subband images
+    f:  filter in the ladder network structure
+    type1:  'q' or 'p' for selecting quincunx or parallelogram
     downsampling matrix
-    type2:	second parameter for selecting the filterbank type
+    type2:  second parameter for selecting the filterbank type
     If type1 == 'q' then type2 is one of {'1r', '1c', '2r', '2c'}
     ({1, 2, 0, 3} can also be used as equivalent)
     If type1 == 'p' then type2 is one of {0, 1, 2, 3}
     Those are specified in QPDEC and PPDEC
     extmod: [optional] extension mode (default is 'per')
     This refers to polyphase components.
-    
+
     Output:
-    x:	reconstructed image
-    
-    Note:		This is also called the lifting scheme	
-    
-    See also:	FBDEC_L"""
+    x:  reconstructed image
+
+    Note:       This is also called the lifting scheme
+
+    See also:   FBDEC_L"""
 
     # Modulate f
     f[:,::2] = -f[:,::2]
@@ -720,7 +721,7 @@ def pfilters(fname):
     Output:
     h, g: 1D filters (lowpass for analysis and synthesis, respectively)
     for separable pyramid"""
-    
+
     def filter97():
         h = array([[.037828455506995, -.023849465019380, -.11062440441842,
                    .37740285561265]])
@@ -728,7 +729,9 @@ def pfilters(fname):
 
         g = array([[-.064538882628938, -.040689417609558, .41809227322221]])
         g = c_[g, .78848561640566, g[:,::-1]]
+
         return h, g
+
     def filterMaxFlat():
         M1 = 1/sqrt(2)
         M2 = M1
@@ -737,32 +740,38 @@ def pfilters(fname):
         k3 = k1
         h  = array([[.25*k2*k3, .5*k2, 1+.5*k2*k3]])*M1
         h = c_[h, h[:,size(h)-2::-1]]
-        
+
         g  = array([[-.125*k1*k2*k3, 0.25*k1*k2, -0.5*k1-0.5*k3-0.375*k1*k2*k3,
               1+.5*k1*k2]])*M2
         g = c_[g, g[:,size(g)-2::-1]]
         # Normalize
         h = h * sqrt(2)
-	g = g * sqrt(2)
+        g = g * sqrt(2)
+
         return h, g
+
     def filter53():
         h = array([[-1., 2., 6., 2., -1.]]) / (4 * sqrt(2))
         g = array([[1., 2., 1.]]) / (2 * sqrt(2))
+
         return h, g
+
     def filterBurt():
         h = array([[0.6, 0.25, -0.05]])
         h = sqrt(2) * c_[h[:,:0:-1], h]
-
-	g = array([[17.0/28, 73.0/280, -3.0/56, -3.0/280]])
+        g = array([[17.0/28, 73.0/280, -3.0/56, -3.0/280]])
         g = sqrt(2) * c_[g[:,:0:-1], g]
+
         return h, g
+
     def filterPkva():
         #filters from the ladder structure
         # Allpass filter for the ladder structure network
         beta = ldfilter(fname)
 
         lf = size(beta)
-	n = lf / 2.0
+
+        n = lf / 2.0
 
         if n != floor(n):
             print "The input allpass filter must be even length"
@@ -770,21 +779,23 @@ def pfilters(fname):
         #beta(z^2)
         beta2 = zeros((1,2*lf-1))
         beta2[:,::2] = beta
-    
-	#H(z)
-	h = beta2.copy()
+
+        #H(z)
+        h = beta2.copy()
         h[:,2*n-1] = h[:,2*n-1] + 1
-	h = h / 2.0
-	
-	#G(z)
-	g = -signal.convolve(beta2, h)
+        h = h / 2.0
+
+        #G(z)
+        g = -signal.convolve(beta2, h)
         g[:,4*n-2] = g[:,4*n-2] + 1
         g[:,1:-1:2] = -g[:,1:-1:2]
-	
-	#Normalize
-	h = h * sqrt(2)
-	g = g * sqrt(2)
+
+        #Normalize
+        h = h * sqrt(2)
+        g = g * sqrt(2)
+
         return h, g
+
     def errhandler():
         print 'Invalid filter name'
 
@@ -796,29 +807,30 @@ def pfilters(fname):
               'Burt': filterBurt,
               'burt': filterBurt,
               'pkva': filterPkva}
+
     return switch.get(fname,errhandler)()
 
 def dfilters(fname, type):
     """ DFILTERS Generate directional 2D filters
     Input:
-    fname:	Filter name.  Available 'fname' are:
-    'haar':	the Haar filters
-    'vk':	McClellan transformed of the filter from the VK book
-    'ko':	orthogonal filter in the Kovacevic's paper
-    'kos':	smooth 'ko' filter
-    'lax':	17 x 17 by Lu, Antoniou and Xu
-    'sk':	9 x 9 by Shah and Kalker
-    'cd':	7 and 9 McClellan transformed by Cohen and Daubechies
-    'pkva':	ladder filters by Phong et al.
-    'oqf_362':	regular 3 x 6 filter
+    fname:  Filter name.  Available 'fname' are:
+    'haar': the Haar filters
+    'vk':   McClellan transformed of the filter from the VK book
+    'ko':   orthogonal filter in the Kovacevic's paper
+    'kos':  smooth 'ko' filter
+    'lax':  17 x 17 by Lu, Antoniou and Xu
+    'sk':   9 x 9 by Shah and Kalker
+    'cd':   7 and 9 McClellan transformed by Cohen and Daubechies
+    'pkva': ladder filters by Phong et al.
+    'oqf_362':  regular 3 x 6 filter
     'dvmlp':    regular linear phase biorthogonal filter with 3 dvm
-    'sinc':	ideal filter (*NO perfect recontruction*)
+    'sinc': ideal filter (*NO perfect recontruction*)
     'dmaxflat': diamond maxflat filters obtained from a three stage ladder
 
-     type:	'd' or 'r' for decomposition or reconstruction filters
+     type:  'd' or 'r' for decomposition or reconstruction filters
 
      Output:
-	h0, h1:	diamond filter pair (lowpass and highpass)
+    h0, h1: diamond filter pair (lowpass and highpass)
 
      To test those filters (for the PR condition for the FIR case),
      verify that:
@@ -832,23 +844,27 @@ def dfilters(fname, type):
     def filterHaar():
         if str.lower(type[0]) == 'd':
             h0 = array([[1, 1]]) / sqrt(2)
-	    h1 = array([[-1, 1]]) / sqrt(2)
-	else:
-	    h0 = array([[1, 1]]) / sqrt(2)
-	    h1 = array([[1, -1]]) / sqrt(2)
+            h1 = array([[-1, 1]]) / sqrt(2)
+        else:
+            h0 = array([[1, 1]]) / sqrt(2)
+            h1 = array([[1, -1]]) / sqrt(2)
         return h0, h1
+
     def filterVk():
         if str.lower(type[0]) == 'd':
             h0 = array([[1, 2, 1]]) / 4.0
-	    h1 = array([[-1, -2, 6, -2, -1]]) / 4.0
+            h1 = array([[-1, -2, 6, -2, -1]]) / 4.0
         else:
-	    h0 = array([[-1, 2, 6, 2, -1]]) / 4.0
-	    h1 = array([[-1, 2, -1]]) / 4.0
+            h0 = array([[-1, 2, 6, 2, -1]]) / 4.0
+            h1 = array([[-1, 2, -1]]) / 4.0
+
         # McClellan transfrom to obtain 2D diamond filters
         t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0 # diamond kernel
         h0 = mctrans(h0, t)
         h1 = mctrans(h1, t)
+
         return h0, h1
+
     def filterKo(): # orthogonal filters in Kovacevic's thesis
         a0, a1, a2 = 2, 0.5, 1
 
@@ -857,43 +873,52 @@ def dfilters(fname, type):
                     [0, a0*a1*a2, -a1*a2, 0]])
 
         # h1 = qmf2(h0);
-	h1 = array([[0, -a1*a2, -a0*a1*a2, 0],
+        h1 = array([[0, -a1*a2, -a0*a1*a2, 0],
                     [1, a0, -a0*a2, a2],
                     [0, -a0*a1, a1, 0]])
-	
-	# Normalize filter sum and norm;
-	norm = sqrt(2) / sum(h0)
-	
-	h0 = h0 * norm	
-	h1 = h1 * norm
+
+        # Normalize filter sum and norm;
+        norm = sqrt(2) / sum(h0)
+
+        h0 = h0 * norm
+        h1 = h1 * norm
 
         if  str.lower(type[0]) == 'r':
             #Reverse filters for reconstruction
             h0 = h0[::-1, ::-1]
             h1 = h1[::-1, ::-1]
+
         return h0, h1
+
     def filterKos(): #Smooth orthogonal filters in Kovacevic's thesis
-	a0, a1, a2 = -sqrt(3), -sqrt(3), 2+sqrt(3)
-	h0 = array([[0, -a1, -a0*a1, 0],
+        a0, a1, a2 = -sqrt(3), -sqrt(3), 2+sqrt(3)
+
+        h0 = array([[0, -a1, -a0*a1, 0],
                     [-a2, -a0*a2, -a0, 1],
                     [0, a0*a1*a2, -a1*a2, 0]])
-	# h1 = qmf2(h0);
-	h1 = array([[0, -a1*a2, -a0*a1*a2, 0],
+
+        # h1 = qmf2(h0);
+
+        h1 = array([[0, -a1*a2, -a0*a1*a2, 0],
                     [1, a0, -a0*a2, a2],
                     [0, -a0*a1, a1, 0]])
-        
-	# Normalize filter sum and norm;
-	norm = sqrt(2) / sum(h0)
-	
-	h0 = h0 * norm	
-	h1 = h1 * norm
-	      
+
+
+        # Normalize filter sum and norm;
+
+        norm = sqrt(2) / sum(h0)
+
+        h0 = h0 * norm
+        h1 = h1 * norm
+
         if str.lower(type[0]) == 'r':
             # Reverse filters for reconstruction
             h0 = h0[::-1, ::-1]
             h1 = h1[::-1, ::-1]
+
         return h0, h1
-    def filterLax():	# by Lu, Antoniou and Xu
+
+    def filterLax():    # by Lu, Antoniou and Xu
         h = array([[-1.2972901e-5, 1.2316237e-4, -7.5212207e-5, 6.3686104e-5,
                     9.4800610e-5, -7.5862919e-5,  2.9586164e-4, -1.8430337e-4],
                    [1.2355540e-4, -1.2780882e-4, -1.9663685e-5, -4.5956538e-5,
@@ -910,28 +935,30 @@ def dfilters(fname, type):
                     -4.8489158e-2, -3.1809526e-3, -2.9406153e-2, 1.8993868e-1],
                    [-1.8556637e-4, -7.1279432e-4, 3.3839195e-4, 1.1662001e-2,
                     -5.9398223e-3, -3.4467920e-3, 1.9006499e-1, 5.7235228e-1]])
-        
-	
-	h0 = sqrt(2) * vstack((hstack((h, h[:, len(h)-2::-1])),
-                              hstack((h[len(h)-2::-1, :],
-                                      h[len(h)-2::-1, len(h)-2::-1]))))	
-	
-	h1 = modulate2(h0, 'b')
+
+        h0 = sqrt(2) * vstack((hstack((h, h[:, len(h)-2::-1])),
+                               hstack((h[len(h)-2::-1, :],
+                                       h[len(h)-2::-1, len(h)-2::-1]))))
+        h1 = modulate2(h0, 'b')
+
         return h0, h1
+
     def filterSk(): #by Shah and Kalker
         h = array([[0.621729, 0.161889, -0.0126949, -0.00542504, 0.00124838],
                   [0.161889, -0.0353769, -0.0162751, -0.00499353, 0],
                   [-0.0126949, -0.0162751, 0.00749029, 0, 0],
                   [-0.00542504,  0.00499353, 0, 0, 0],
                   [0.00124838, 0, 0, 0, 0]])
-	
-	h0 = sqrt(2) * vstack((hstack((h[len(h):0:-1, len(h):0:-1],
+
+        h0 = sqrt(2) * vstack((hstack((h[len(h):0:-1, len(h):0:-1],
                                        h[len(h):0:-1, :])),
                                hstack((h[:, len(h):0:-1], h))))
-	
-	h1 = modulate2(h0, 'b')
+
+
+        h1 = modulate2(h0, 'b')
+
         return h0, h1
-        
+
     def filterDvmlp():
         q = sqrt(2)
         b = 0.02
@@ -959,121 +986,136 @@ def dfilters(fname, type):
         if str.lower(type[0]) == 'r':
             h1 = modulate2(h, 'b')
             h0 = g0.copy()
+
         return h0, h1
 
-    def filter79():	# by Cohen and Daubechies
-	# 1D prototype filters: the '7-9' pair
-	h0 = array([[0.026748757411, -0.016864118443, -0.078223266529,
-                    0.266864118443, 0.602949018236, 0.266864118443,
-                    -0.078223266529, -0.016864118443, 0.026748757411]])
-	g0 = array([[-0.045635881557, -0.028771763114, 0.295635881557,
+    def filter79(): # by Cohen and Daubechies
+        # 1D prototype filters: the '7-9' pair
+
+        h0 = array([[0.026748757411, -0.016864118443, -0.078223266529,
+                     0.266864118443, 0.602949018236, 0.266864118443,
+                     -0.078223266529, -0.016864118443, 0.026748757411]])
+
+        g0 = array([[-0.045635881557, -0.028771763114, 0.295635881557,
                     0.557543526229, 0.295635881557, -0.028771763114,
                     -0.045635881557]])
-        
+
         if str.lower(type[0]) == 'd':
-	    h1 = modulate2(g0, 'c')
-	else:
-	    h1 = modulate2(h0, 'c')
-	    h0 = g0.copy()
-           
+            h1 = modulate2(g0, 'c')
+        else:
+            h1 = modulate2(h0, 'c')
+            h0 = g0.copy()
+
         # Use McClellan to obtain 2D filters
         t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0 #diamond kernel
-        h0 = sqrt(2) * mctrans(h0, t)		
+        h0 = sqrt(2) * mctrans(h0, t)
         h1 = sqrt(2) * mctrans(h1, t)
+
         return h0, h1
-	
+
     def filterPkva():
         # Filters from the ladder structure
-        	
-	# Allpass filter for the ladder structure network
-	beta = ldfilter(fname)
-	
-	# Analysis filters
-	h0, h1 = ld2quin(beta)
-	
-	# Normalize norm
-	h0 = sqrt(2) * h0
-	h1 = sqrt(2) * h1
-        
-	# Synthesis filters
+
+        # Allpass filter for the ladder structure network
+
+        beta = ldfilter(fname)
+
+        # Analysis filters
+        h0, h1 = ld2quin(beta)
+
+        # Normalize norm
+        h0 = sqrt(2) * h0
+        h1 = sqrt(2) * h1
+
+        # Synthesis filters
         if str.lower(type[0]) == 'r':
             f0 = modulate2(h1, 'b')
-	    f1 = modulate2(h0, 'b')
-	    h0 = f0.copy()
-	    h1 = f1.copy()
+            f1 = modulate2(h0, 'b')
+            h0 = f0.copy()
+            h1 = f1.copy()
+
         return h0, h1
 
-    def filterPkvaHalf4():	# Filters from the ladder structure	
-	# Allpass filter for the ladder structure network
-	beta = ldfilterhalf(4)
-	
-	# Analysis filters
-	h0, h1 = ld2quin(beta)
-	
-	# Normalize norm
-	h0 = sqrt(2) * h0
-	h1 = sqrt(2) * h1
+    def filterPkvaHalf4():  # Filters from the ladder structure
+        # Allpass filter for the ladder structure network
 
-	# Synthesis filters
+        beta = ldfilterhalf(4)
+
+
+        # Analysis filters
+
+        h0, h1 = ld2quin(beta)
+
+        # Normalize norm
+        h0 = sqrt(2) * h0
+        h1 = sqrt(2) * h1
+
+        # Synthesis filters
         if str.lower(type[0]) == 'r':
             f0 = modulate2(h1, 'b')
-	    f1 = modulate2(h0, 'b')
-	    h0 = f0
-	    h1 = f1
-        return h0, h1
-    
-    def filterPkvaHalf6():	# Filters from the ladder structure	
-	# Allpass filter for the ladder structure network
-	beta = ldfilterhalf(6);
-	
-	# Analysis filters
-	h0, h1 = ld2quin(beta)
-	
-	# Normalize norm
-	h0 = sqrt(2) * h0
-	h1 = sqrt(2) * h1
+            f1 = modulate2(h0, 'b')
+            h0 = f0
+            h1 = f1
 
-	# Synthesis filters
+        return h0, h1
+
+    def filterPkvaHalf6():  # Filters from the ladder structure
+
+        # Allpass filter for the ladder structure network
+        beta = ldfilterhalf(6);
+
+        # Analysis filters
+        h0, h1 = ld2quin(beta)
+
+        # Normalize norm
+        h0 = sqrt(2) * h0
+        h1 = sqrt(2) * h1
+
+        # Synthesis filters
         if srtring.lower(type[0]) == 'r':
             f0 = modulate2(h1, 'b')
-	    f1 = modulate2(h0, 'b')
-	    h0 = f0
-	    h1 = f1
-        return h0, h1
-                         
-    def filterPkvaHalf8():	# Filters from the ladder structure	
-	# Allpass filter for the ladder structure network
-	beta = ldfilterhalf(8)
-	
-	# Analysis filters
-	h0, h1 = ld2quin(beta)
-	
-	# Normalize norm
-	h0 = sqrt(2) * h0
-	h1 = sqrt(2) * h1
+            f1 = modulate2(h0, 'b')
+            h0 = f0
+            h1 = f1
 
-	# Synthesis filters
+        return h0, h1
+
+    def filterPkvaHalf8():  # Filters from the ladder structure
+        # Allpass filter for the ladder structure network
+        beta = ldfilterhalf(8)
+
+        # Analysis filters
+        h0, h1 = ld2quin(beta)
+
+        # Normalize norm
+        h0 = sqrt(2) * h0
+        h1 = sqrt(2) * h1
+
+        # Synthesis filters
         if str.lower(type[0]) == 'r':
             f0 = modulate2(h1, 'b')
-	    f1 = modulate2(h0, 'b')
+            f1 = modulate2(h0, 'b')
             h0 = f0
-	    h1 = f1
+            h1 = f1
+
         return h0, h1
 
-    def filterSinc():	# The "sinc" case, NO Perfect Reconstruction
-	# Ideal low and high pass filters
-	flength = 30
-	
-	h0 = array([signal.filter_design.firwin(flength+1, 0.5)])
-	h1 = modulate2(h0, 'c')
-	
-	# Use McClellan to obtain 2D filters
-	t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0 # diamond kernel
-	h0 = sqrt(2) * mctrans(h0, t)	
-	h1 = sqrt(2) * mctrans(h1, t)
-	return h0, h1
+    def filterSinc():   # The "sinc" case, NO Perfect Reconstruction
 
-    def filterOqf():	# Some "home-made" filters!
+        # Ideal low and high pass filters
+        flength = 30
+
+        h0 = array([signal.filter_design.firwin(flength+1, 0.5)])
+        h1 = modulate2(h0, 'c')
+
+        # Use McClellan to obtain 2D filters
+        t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0 # diamond kernel
+        h0 = sqrt(2) * mctrans(h0, t)
+        h1 = sqrt(2) * mctrans(h1, t)
+
+        return h0, h1
+
+    def filterOqf():    # Some "home-made" filters!
         h0 = sqrt(2) / 64 * array([[sqrt(15), -3, 0],
                                    [0, 5, -sqrt(15)],
                                    [-2*sqrt(15), 30, 0],
@@ -1083,22 +1125,27 @@ def dfilters(fname, type):
 
         h1 = -reverse2(modulate2(h0, 'b'))
 
-	if str.lower(type[0]) == 'r':
-	    # Reverse filters for reconstruction
+        if str.lower(type[0]) == 'r':
+            # Reverse filters for reconstruction
             h0 = h0[::-1, ::-1]
             h1 = h1[::-1, ::-1]
+
         return h0, h1
+
     def filterTest():      # Only for the shape, not for PR
-	h0 = array([[0, 1, 0], [1, 4, 1], [0, 1, 0]])
-	h1 = array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]])
+        h0 = array([[0, 1, 0], [1, 4, 1], [0, 1, 0]])
+        h1 = array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]])
+
         return h0, h1
 
     def filterTestDVM(): # Only for directional vanishing moment
-	h0 = array([[1, 1], [1, 1]]) / sqrt(2)
-        h1 = array([[-1, 1], [1, -1]]) / sqrt(2)	
-	return h0, h1
-    def filterQmf():	# by Lu, Antoniou and Xu
-	#ideal response
+        h0 = array([[1, 1], [1, 1]]) / sqrt(2)
+        h1 = array([[-1, 1], [1, -1]]) / sqrt(2)
+
+        return h0, h1
+
+    def filterQmf():    # by Lu, Antoniou and Xu
+    #ideal response
         #window
         m, n = 2, 2
         w = empty([5,5])
@@ -1106,6 +1153,7 @@ def dfilters(fname, type):
         for n1 in xrange(-m,m+1):
             for n2 in xrange(-n,n+1):
                 w[n1+m,n2+n] = w1d[2*m+n1+n2]*w1d[2*m+n1-n2]
+
         h = empty([5,5])
         for n1 in xrange(-m,m+1):
             for n2 in xrange(-n,n+1):
@@ -1115,15 +1163,16 @@ def dfilters(fname, type):
         h = sqrt(2)*h/c
         h0 = h*w
         h1 = modulate2(h0,'b')
+
         return h0, h1
         #h0 = modulate2(h,'r');
         #h1 = modulate2(h,'b');
 
-    def filterQmf2():	# by Lu, Antoniou and Xu
-	# ideal response
+    def filterQmf2():   # by Lu, Antoniou and Xu
+        # ideal response
         # window
 
-        h=array([[-.001104, .002494, -0.001744, 0.004895,
+        h = array([[-.001104, .002494, -0.001744, 0.004895,
                   -0.000048, -.000311],
                  [0.008918, -0.002844, -0.025197, -0.017135,
                   0.003905, -0.000081],
@@ -1137,10 +1186,12 @@ def dfilters(fname, type):
                   -0.002668, 0.000596]])
         h0 = h/sum(h)
         h1 = modulate2(h0, 'b')
+
         return h0, h1
 
         #h0 = modulate2(h,'r');
-        #h1 = modulate2(h,'b');   
+        #h1 = modulate2(h,'b');
+
     def filterDmaxflat4():
         M1 = 1/sqrt(2)
         M2 = M1
@@ -1157,14 +1208,15 @@ def dfilters(fname, type):
         g0 = mctrans(g,B)
         h0 = sqrt(2)*h0/sum(h0)
         g0 = sqrt(2)*g0/sum(g0)
-       
+
         h1 = modulate2(g0,'b')
-        
+
         if str.lower(type[0]) == 'r':
             h1 = modulate2(h0, 'b')
             h0 = g0.copy()
+
         return h0, h1
-    
+
     def filterDmaxflat5():
         M1 = 1/sqrt(2)
         M2 = M1
@@ -1181,7 +1233,7 @@ def dfilters(fname, type):
         g0 = mctrans(g,B)
         h0 = sqrt(2)*h0/sum(h0)
         g0 = sqrt(2)*g0/sum(g0)
-        
+
         h1 = modulate2(g0,'b')
         if str.lower(type[0]) == 'r':
             h1 = modulate2(h0 ,'b')
@@ -1204,12 +1256,15 @@ def dfilters(fname, type):
         g0 = mctrans(g,B)
         h0 = sqrt(2)*h0/sum(h0)
         g0 = sqrt(2)*g0/sum(g0)
-       
+
         h1 = modulate2(g0,'b')
+
         if str.lower(type[0]) == 'r':
             h1 = modulate2(h0 ,'b')
             h0 = g0.copy()
+
         return h0, h1
+
     def filterDmaxflat7():
         M1 = 1/sqrt(2)
         M2 = M1
@@ -1226,14 +1281,18 @@ def dfilters(fname, type):
         g0 = mctrans(g,B)
         h0 = sqrt(2)*h0/sum(h0)
         g0 = sqrt(2)*g0/sum(g0)
-        
+
         h1 = modulate2(g0, 'b')
+
         if str.lower(type[0]) == 'r':
             h1 = modulate2(h0 ,'b')
             h0 = g0.copy()
+
         return h0, h1
+
     def errhandler():
         print 'Unrecognized ladder structure filter name'
+
     switch = {'haar': filterHaar,
               'vk': filterVk,
               'ko': filterKo,
@@ -1257,10 +1316,11 @@ def dfilters(fname, type):
               'dmaxflat5': filterDmaxflat5,
               'dmaxflat6': filterDmaxflat6,
               'dmaxflat7': filterDmaxflat7}
+
     return switch.get(fname,errhandler)()
-    
+
 def ldfilter(fname):
-    """LDFILTER	Generate filter for the ladder structure network
+    """LDFILTER Generate filter for the ladder structure network
     f = ldfilter(fname)
 
     Input: fname:  Available 'fname' are:
@@ -1370,19 +1430,19 @@ def dmaxflat(N,d):
               7: dmaxflat7}
 
     return switch.get(N, errhandler)()
-    
+
 # Multidimensional filtering (used in building block filter banks)
 def sefilter2(x, f1, f2, extmod='per', shift=array([[0],[0]])):
     """SEFILTER2   2D seperable filtering with extension handling
     y = sefilter2(x, f1, f2, [extmod], [shift])
-    
+
     Input:
     x:      input image
     f1, f2: 1-D filters in each dimension that make up a 2D seperable filter
     extmod: [optional] extension mode (default is 'per')
-    shift:  [optional] specify the window over which the 
+    shift:  [optional] specify the window over which the
     convolution occurs. By default shift = [0; 0].
-    
+
     Output:
     y:      filtered image of the same size as the input image:
     Y(z1,z2) = X(z1,z2)*F1(z1)*F2(z2)*z1^shift(1)*z2^shift(2)
@@ -1412,26 +1472,26 @@ def sefilter2(x, f1, f2, extmod='per', shift=array([[0],[0]])):
 
 def efilter2(x, f, extmod='per', shift=array([[0], [0]])):
     """EFILTER2   2D Filtering with edge handling (via extension)
-    
+
     y = efilter2(x, f, [extmod], [shift])
-    
+
     Input:
-    x:	input image
-    f:	2D filter
-    extmod:	[optional] extension mode (default is 'per')
-    shift:	[optional] specify the window over which the 
+    x:  input image
+    f:  2D filter
+    extmod: [optional] extension mode (default is 'per')
+    shift:  [optional] specify the window over which the
     convolution occurs. By default shift = [0; 0].
-    
+
     Output:
-    y:	filtered image that has:
+    y:  filtered image that has:
     Y(z1,z2) = X(z1,z2)*F(z1,z2)*z1^shift(1)*z2^shift(2)
-    
+
     Note:
     The origin of filter f is assumed to be floor(size(f)/2) + 1.
     Amount of shift should be no more than floor((size(f)-1)/2).
     The output image has the same size with the input image.
-    
-    See also:	EXTEND2, SEFILTER2"""
+
+    See also:   EXTEND2, SEFILTER2"""
 
     # Periodized extension
     sf = (array(f.shape) - 1) / 2.0
@@ -1447,59 +1507,66 @@ def efilter2(x, f, extmod='per', shift=array([[0], [0]])):
 def extend2(x, ru, rd, cl, cr, extmod):
     """ EXTEND2   2D extension
     y = extend2(x, ru, rd, cl, cr, extmod)
-    
+
     Input:
-    x:	input image
-    ru, rd:	amount of extension, up and down, for rows
-    cl, cr:	amount of extension, left and rigth, for column
-    extmod:	extension mode.  The valid modes are:
-    'per':		periodized extension (both direction)
-    'qper_row':	quincunx periodized extension in row
-    'qper_col':	quincunx periodized extension in column
-    
+    x:  input image
+    ru, rd: amount of extension, up and down, for rows
+    cl, cr: amount of extension, left and rigth, for column
+    extmod: extension mode.  The valid modes are:
+    'per':      periodized extension (both direction)
+    'qper_row': quincunx periodized extension in row
+    'qper_col': quincunx periodized extension in column
+
     Output:
-    y:	extended image
-    
+    y:  extended image
+
     Note:
     Extension modes 'qper_row' and 'qper_col' are used multilevel
-    quincunx filter banks, assuming the original image is periodic in 
+    quincunx filter banks, assuming the original image is periodic in
     both directions.  For example:
     [y0, y1] = fbdec(x, h0, h1, 'q', '1r', 'per');
     [y00, y01] = fbdec(y0, h0, h1, 'q', '2c', 'qper_col');
-    [y10, y11] = fbdec(y1, h0, h1, 'q', '2c', 'qper_col'); 
-    
-    See also:	FBDEC"""
+    [y10, y11] = fbdec(y1, h0, h1, 'q', '2c', 'qper_col');
+
+    See also:   FBDEC"""
 
     rx, cx = array(x.shape)
 
-    def extmodPer():        
-	I = getPerIndices(rx, ru, rd)
-	y = x[I, :]
-	
-	I = getPerIndices(cx, cl, cr)
-	y = y[:, I]
+    def extmodPer():
+        I = getPerIndices(rx, ru, rd)
+        y = x[I, :]
+
+        I = getPerIndices(cx, cl, cr)
+        y = y[:, I]
+
         return y
+
     def extmodQper_row():
-        rx2 = round(rx / 2.0) 
+        rx2 = round(rx / 2.0)
         y = c_[r_[x[rx2:rx, cx-cl:cx], x[0:rx2, cx-cl:cx]],
-               x, r_[x[rx2:rx, 0:cr], x[0:rx2, 0:cr]]]	
-	I = getPerIndices(rx, ru, rd)
-	y = y[I, :]
-	return y
+               x, r_[x[rx2:rx, 0:cr], x[0:rx2, 0:cr]]]
+        I = getPerIndices(rx, ru, rd)
+        y = y[I, :]
+
+        return y
+
     def extmodQper_col():
         cx2 = round(cx / 2.0)
         y = r_[c_[x[rx-ru:rx, cx2:cx], x[rx-ru:rx, 0:cx2]],
                x, c_[x[0:rd, cx2:cx], x[0:rd, 0:cx2]]]
-	
-	I = getPerIndices(cx, cl, cr)
-	y = y[:, I]
-	return y
+
+        I = getPerIndices(cx, cl, cr)
+        y = y[:, I]
+
+        return y
+
     def errhandler():
         print 'Invalid input for EXTMOD'
 
     switch = {'per': extmodPer,
               'qper_row': extmodQper_row,
               'qper_col': extmodQper_col}
+
     return switch.get(extmod, errhandler)()
 
 #----------------------------------------------------------------------------#
@@ -1511,57 +1578,66 @@ def getPerIndices(lx, lb, le):
         I = mod(I, lx)
         I[I == 0] = lx
     I = I - 1
+
     return I.astype(int)
 
 # Multidimesional Sampling (used in building block filter banks)
 def pdown(x, type, phase=0):
     """ PDOWN   Parallelogram Downsampling
-     	y = pdown(x, type, [phase])
+        y = pdown(x, type, [phase])
      Input:
-    	x:	input image
-    	type:	one of {0, 1, 2, 3} for selecting sampling matrices:
-    			P0 = [2, 0; 1, 1]
-    			P1 = [2, 0; -1, 1]
-    			P2 = [1, 1; 0, 2]
-    			P3 = [1, -1; 0, 2]
-    	phase:	[optional] 0 or 1 for keeping the zero- or one-polyphase
-    		component, (default is 0)
+        x:  input image
+        type:   one of {0, 1, 2, 3} for selecting sampling matrices:
+                P0 = [2, 0; 1, 1]
+                P1 = [2, 0; -1, 1]
+                P2 = [1, 1; 0, 2]
+                P3 = [1, -1; 0, 2]
+        phase:  [optional] 0 or 1 for keeping the zero- or one-polyphase
+            component, (default is 0)
      Output:
-    	y:	parallelogram downsampled image
+        y:  parallelogram downsampled image
      Note:
-    	These sampling matrices appear in the directional filterbank:
-    		P0 = R0 * Q0
-    		P1 = R1 * Q1
-    		P2 = R2 * Q1
-    		P3 = R3 * Q0
-    	where R's are resampling matrices and Q's are quincunx matrices
-     See also:	PPDEC"""
+        These sampling matrices appear in the directional filterbank:
+            P0 = R0 * Q0
+            P1 = R1 * Q1
+            P2 = R2 * Q1
+            P3 = R3 * Q0
+        where R's are resampling matrices and Q's are quincunx matrices
+     See also:  PPDEC"""
     # Parallelogram polyphase decomposition by simplifying sampling matrices
     # using the Smith decomposition of the quincunx matrices
     def type0(): # P0 = R0 * Q0 = D0 * R2
         if phase == 0:
             y = resamp(x[::2], 2)
         else:
-	    y = resamp(x[1::2,r_[1:len(x),0]], 2)
+            y = resamp(x[1::2,r_[1:len(x),0]], 2)
+
         return y
+
     def type1(): # P1 = R1 * Q1 = D0 * R3
         if phase == 0:
             y = resamp(x[::2], 3)
         else:
             y = resamp(x[1::2], 3)
+
         return y
+
     def type2(): # P2 = R2 * Q1 = D1 * R0
         if phase == 0:
             y = resamp(x[:, ::2], 0)
         else:
             y = resamp(x[r_[1:len(x),0],1::2], 0)
+
         return y
+
     def type3(): # P3 = R3 * Q0 = D1 * R1
         if phase == 0:
             y = resamp(x[:, ::2], 1)
         else:
             y = resamp(x[:, 1::2], 1)
+
         return y
+
     def errhandler():
         print 'Invalid argument type'
 
@@ -1574,31 +1650,31 @@ def pdown(x, type, phase=0):
 
 def pup(x, type, phase=0):
     """ PUP   Parallelogram Upsampling
-    
-     	y = pup(x, type, [phase])
-    
+
+        y = pup(x, type, [phase])
+
      Input:
-    	x:	input image
-    	type:	one of {0, 1, 2, 3} for selecting sampling matrices:
-    			P0 = [2, 0; 1, 1]
-    			P1 = [2, 0; -1, 1]
-    			P2 = [1, 1; 0, 2]
-    			P3 = [1, -1; 0, 2]
-    	phase:	[optional] 0 or 1 to specify the phase of the input image as
-    		zero- or one-polyphase	component, (default is 0)
-    
+        x:  input image
+        type:   one of {0, 1, 2, 3} for selecting sampling matrices:
+                P0 = [2, 0; 1, 1]
+                P1 = [2, 0; -1, 1]
+                P2 = [1, 1; 0, 2]
+                P3 = [1, -1; 0, 2]
+        phase:  [optional] 0 or 1 to specify the phase of the input image as
+            zero- or one-polyphase  component, (default is 0)
+
      Output:
-    	y:	parallelogram upsampled image
-    
+        y:  parallelogram upsampled image
+
      Note:
-    	These sampling matrices appear in the directional filterbank:
-    		P0 = R0 * Q0
-    		P1 = R1 * Q1
-    		P2 = R2 * Q1
-    		P3 = R3 * Q0
-    	where R's are resampling matrices and Q's are quincunx matrices
-    
-     See also:	PPDEC"""
+        These sampling matrices appear in the directional filterbank:
+            P0 = R0 * Q0
+            P1 = R1 * Q1
+            P2 = R2 * Q1
+            P3 = R3 * Q0
+        where R's are resampling matrices and Q's are quincunx matrices
+
+     See also:  PPDEC"""
 
     # Parallelogram polyphase decomposition by simplifying sampling matrices
     # using the Smith decomposition of the quincunx matrices
@@ -1612,32 +1688,40 @@ def pup(x, type, phase=0):
 
     def type0(): # P0 = R0 * Q0 = D0 * R2
         y = zeros((2*m, n))
-	if phase == 0:
-	    y[::2] = resamp(x, 3)
-	else:
+        if phase == 0:
+            y[::2] = resamp(x, 3)
+        else:
             y[1::2,r_[1:len(y),0]] = resamp(x, 3)
+
         return y
+
     def type1():  # P1 = R1 * Q1 = D0 * R3
         y = zeros((2*m, n))
         if phase == 0:
             y[::2] = resamp(x, 2)
         else:
             y[1::2] = resamp(x, 2)
+
         return y
+
     def type2(): # P2 = R2 * Q1 = D1 * R0
         y = zeros((m, 2*n))
         if phase == 0:
             y[:, ::2] = resamp(x, 1)
         else:
             y[r_[1:len(y),0],1::2] = resamp(x, 1)
+
         return y
+
     def type3(): # P3 = R3 * Q0 = D1 * R1
         y = zeros((m, 2*n))
         if phase == 0:
             y[:, ::2] = resamp(x, 0)
         else:
             y[:, 1::2] = resamp(x, 0)
+
         return y
+
     def errhandler():
         print 'Invalid argument type'
 
@@ -1650,38 +1734,38 @@ def pup(x, type, phase=0):
 
 def qdown(x, type='1r', extmod='per', phase=0):
     """ QDOWN   Quincunx Downsampling
-    
-     	y = qdown(x, [type], [extmod], [phase])
-    
+
+        y = qdown(x, [type], [extmod], [phase])
+
      Input:
-    	x:	input image
-    	type:	[optional] one of {'1r', '1c', '2r', '2c'} (default is '1r')
-    		'1' or '2' for selecting the quincunx matrices:
-    			Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1] 
-    		'r' or 'c' for suppresing row or column		
-    	phase:	[optional] 0 or 1 for keeping the zero- or one-polyphase
-    		component, (default is 0)
-    
+        x:  input image
+        type:   [optional] one of {'1r', '1c', '2r', '2c'} (default is '1r')
+            '1' or '2' for selecting the quincunx matrices:
+                Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
+            'r' or 'c' for suppresing row or column
+        phase:  [optional] 0 or 1 for keeping the zero- or one-polyphase
+            component, (default is 0)
+
      Output:
-    	y:	qunincunx downsampled image
-    
-     See also:	QPDEC"""
+        y:  qunincunx downsampled image
+
+     See also:  QPDEC"""
 
     """ Quincunx downsampling using the Smith decomposition:
-    	Q1 = R1 * [2, 0; 0, 1] * R2
-    	   = R2 * [1, 0; 0, 2] * R1
+        Q1 = R1 * [2, 0; 0, 1] * R2
+           = R2 * [1, 0; 0, 2] * R1
      and,
-    	Q2 = R0 * [2, 0; 0, 1] * R3
-    	   = R3 * [1, 0; 0, 2] * R0
-    
-        See RESAMP for the definition of those resampling matrices"""
+        Q2 = R0 * [2, 0; 0, 1] * R3
+           = R3 * [1, 0; 0, 2] * R0
+
+    See RESAMP for the definition of those resampling matrices"""
 
     def type1r():
         z = resamp(x, 1)
-	if phase == 0:
-	    y = resamp(z[::2], 2)
-	else:
-	    y = resamp(z[1::2,r_[1:len(z),0]], 2)
+    if phase == 0:
+        y = resamp(z[::2], 2)
+    else:
+        y = resamp(z[1::2,r_[1:len(z),0]], 2)
         return y
     def type1c(): 
         z = resamp(x, 2)
@@ -1715,55 +1799,61 @@ def qdown(x, type='1r', extmod='per', phase=0):
 
 def qup(x, type='1r', phase=0):
     """ QUP   Quincunx Upsampling
-    
-     	y = qup(x, [type], [phase])
-    
+
+        y = qup(x, [type], [phase])
+
      Input:
-    	x:	input image
-    	type:	[optional] one of {'1r', '1c', '2r', '2c'} (default is '1r')
-    		'1' or '2' for selecting the quincunx matrices:
-    			Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
-    		'r' or 'c' for extending row or column		
-    	phase:	[optional] 0 or 1 to specify the phase of the input image as
-    		zero- or one-polyphase component, (default is 0)
-    
+        x:  input image
+        type:   [optional] one of {'1r', '1c', '2r', '2c'} (default is '1r')
+            '1' or '2' for selecting the quincunx matrices:
+                Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
+            'r' or 'c' for extending row or column
+        phase:  [optional] 0 or 1 to specify the phase of the input image as
+            zero- or one-polyphase component, (default is 0)
+
      Output:
-    	y:	qunincunx upsampled image
-    
-     See also:	QDOWN"""
+        y:  qunincunx upsampled image
+
+     See also:  QDOWN"""
 
     """ Quincunx downsampling using the Smith decomposition:
-    
-    	Q1 = R2 * [2, 0; 0, 1] * R3
-    	   = R3 * [1, 0; 0, 2] * R2
+
+        Q1 = R2 * [2, 0; 0, 1] * R3
+           = R3 * [1, 0; 0, 2] * R2
      and,
-    	Q2 = R1 * [2, 0; 0, 1] * R4
-    	   = R4 * [1, 0; 0, 2] * R1
-    
+        Q2 = R1 * [2, 0; 0, 1] * R4
+           = R4 * [1, 0; 0, 2] * R1
+
      See RESAMP for the definition of those resampling matrices
-    
+
      Note that R0 * R1 = R2 * R3 = I so for example,
      upsample by R0 is the same with down sample by R1.
      Also the order of upsampling operations is in the reserved order
      with the one of matrix multiplication."""
 
     m, n = x.shape
-    def type1r(): 
+
+    def type1r():
         z = zeros((2*m, n))
-	if phase == 0:
-	    z[::2] = resamp(x, 3)
-	else:
+
+        if phase == 0:
+            z[::2] = resamp(x, 3)
+        else:
             z[1::2,r_[1:len(z),0]] = resamp(x, 3)
         y = resamp(z,0)
+
         return y
-    def type1c(): 
+
+    def type1c():
         z = zeros((m, 2*n))
         if phase == 0:
             z[:, ::2] = resamp(x, 0)
         else:
             z[:, 1::2] = resamp(x, 0)
         y = resamp(z, 3)
+
         return y
+
     def type2r():
         z = zeros((2*m, n))
         if phase == 0:
@@ -1771,15 +1861,19 @@ def qup(x, type='1r', phase=0):
         else:
             z[1::2,:] = resamp(x, 2)
         y = resamp(z, 1)
+
         return y
-    def type2c(): 
-       z = zeros((m, 2*n))
-       if phase == 0:
-           z[:, ::2] = resamp(x, 1)
-       else:
-           z[r_[1:len(z),0],1::2] = resamp(x, 1)
-       y = resamp(z, 2)
-       return y
+
+    def type2c():
+        z = zeros((m, 2*n))
+        if phase == 0:
+            z[:, ::2] = resamp(x, 1)
+        else:
+            z[r_[1:len(z),0],1::2] = resamp(x, 1)
+        y = resamp(z, 2)
+
+        return y
+
     def errhandler():
         print 'Invalid argument type'
 
@@ -1792,25 +1886,25 @@ def qup(x, type='1r', phase=0):
 
 def qupz(x, type=1):
     """ QUPZ   Quincunx Upsampling (with zero-pad and matrix extending)
-     	y = qup(x, [type])
+        y = qup(x, [type])
         Input:
-	x:	input image
-	type:	[optional] 1 or 2 for selecting the quincunx matrices:
-			Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
+    x:  input image
+    type:   [optional] 1 or 2 for selecting the quincunx matrices:
+            Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
         Output:
-	y:	qunincunx upsampled image
+    y:  qunincunx upsampled image
 
        This resampling operation does NOT involve periodicity, thus it
        zero-pad and extend the matrix"""
-    
+
     """ Quincunx downsampling using the Smith decomposition:
-	Q1 = R1 * [2, 0; 0, 1] * R2
+    Q1 = R1 * [2, 0; 0, 1] * R2
         and,
-	Q2 = R0 * [2, 0; 0, 1] * R3
+    Q2 = R0 * [2, 0; 0, 1] * R3
 
         See RESAMP for the definition of those resampling matrices
-        
-        Note that R0 * R1 = R2 * R3 = I so for example,
+
+     Note that R0 * R1 = R2 * R3 = I so for example,
         upsample by R1 is the same with down sample by R2.
         Also the order of upsampling operations is in the reserved order
         with the one of matrix multiplication."""
@@ -1818,20 +1912,24 @@ def qupz(x, type=1):
     def type1():
         x1 = resampz(x, 3)
         m, n = x1.shape
-	x2 = zeros((2*m-1, n))
-        x2[::2] = x1.copy()	
-	y = resampz(x2, 0)
+        x2 = zeros((2*m-1, n))
+        x2[::2] = x1.copy()
+        y = resampz(x2, 0)
+
         return y
+
     def type2():
         x1 = resampz(x, 2)
-	m, n = x1.shape
-	x2 = zeros((2*m-1, n))
-        x2[::2] = x1.copy()	
-	y = resampz(x2, 1)
+        m, n = x1.shape
+        x2 = zeros((2*m-1, n))
+        x2[::2] = x1.copy()
+        y = resampz(x2, 1)
+
         return y
+
     def errhandler():
         print 'Invalid argument type'
-        
+
     switch = {1: type1,
               2: type2}
 
@@ -1839,66 +1937,67 @@ def qupz(x, type=1):
 
 def dup(x, step, phase=array([0, 0])):
     """ DUP   Diagonal Upsampling
-    
+
     y = dup(x, step, [phase])
-    
+
     Input:
-    x:	input image
-    step:	upsampling factors for each dimension which should be a
+    x:  input image
+    step:   upsampling factors for each dimension which should be a
     2-vector
-    phase:	[optional] to specify the phase of the input image which
+    phase:  [optional] to specify the phase of the input image which
     should be less than step, (default is [0, 0])
     If phase == 'minimum', a minimum size of upsampled image
     is returned
-    
+
     Output:
-    y:	diagonal upsampled image
-    
-    See also:	DDOWN"""
+    y:  diagonal upsampled image
+
+    See also:   DDOWN"""
 
     sx = array(x.shape)
-    
+
     if phase[0] == 'm' or phase[0] == 'M':
         y = zeros((sx - 1) * step + 1)
         y[0::step[0], 0::step[0]] = x.copy()
     else:
         y = zeros(sx * step)
         y[phase[0]::step[0], phase[1]::step[1]] = x.copy()
+
     return y
 
 def resamp(x, type, shift=1, extmod='per'):
     """ RESAMP   Resampling in 2D filterbank
 
-	y = resamp(x, type, [shift, extmod])
+    y = resamp(x, type, [shift, extmod])
 
         Input:
-	x:	input image
+    x:  input image
         type: one of {0,1,2,3} (see note)
 
-	shift:	[optional] amount of shift (default is 1)
+    shift:  [optional] amount of shift (default is 1)
         extmod: [optional] extension mode (default is 'per').
         Other options are:
-        
+
         Output:
- 	y:	resampled image.
-        
+    y:  resampled image.
+
         Note:
-	The resampling matrices are:
-		R0 = [1, 1;  0, 1];
-		R1 = [1, -1; 0, 1];
-		R2 = [1, 0;  1, 1];
-		R3 = [1, 0; -1, 1];
+    The resampling matrices are:
+        R0 = [1, 1;  0, 1];
+        R1 = [1, -1; 0, 1];
+        R2 = [1, 0;  1, 1];
+        R3 = [1, 0; -1, 1];
 
-	For type 0 and type 1, the input image is extended (for example
-	periodically) along the vertical direction;
-	while for type 2 and type 3 the image is extended along the 
-	horizontal direction.
+    For type 0 and type 1, the input image is extended (for example
+    periodically) along the vertical direction;
+    while for type 2 and type 3 the image is extended along the
+    horizontal direction.
 
-	Calling resamp(x, type, n) which n is positive integer is equivalent
-	to repeatly calling resamp(x, type) n times.
+    Calling resamp(x, type, n) which n is positive integer is equivalent
+    to repeatly calling resamp(x, type) n times.
 
-	Input shift can be negative so that resamp(x, 0, -1) is the same
-	with resamp(x, 1, 1)"""
+    Input shift can be negative so that resamp(x, 0, -1) is the same
+    with resamp(x, 1, 1)"""
     def type01():
         y = resampc(x, type, shift, extmod)
         return y
@@ -1928,91 +2027,105 @@ def resampz(x, type, shift=1):
         y:      resampled matrix
 
         Note:
-	The resampling matrices are:
-		R1 = [1, 1;  0, 1];
-		R2 = [1, -1; 0, 1];
-		R3 = [1, 0;  1, 1];
-		R4 = [1, 0; -1, 1];
+    The resampling matrices are:
+        R1 = [1, 1;  0, 1];
+        R2 = [1, -1; 0, 1];
+        R3 = [1, 0;  1, 1];
+        R4 = [1, 0; -1, 1];
 
-	This resampling program does NOT involve periodicity, thus it
-	zero-pad and extend the matrix."""
+    This resampling program does NOT involve periodicity, thus it
+    zero-pad and extend the matrix."""
     sx = array(x.shape)
     def type01():
         y = zeros([sx[0] + abs(shift * (sx[1] - 1)), sx[1]])
         if type == 0:
-	    shift1 = arange(sx[1]) * (-shift)
+            shift1 = arange(sx[1]) * (-shift)
         else:
-	    shift1 = arange(sx[1]) * shift
+            shift1 = arange(sx[1]) * shift
+
         # Adjust to non-negative shift if needed
         if shift1[-1] < 0:
-	    shift1 = shift1 - shift1[-1]
-	for n in xrange(sx[1]):
-	    y[shift1[n] + arange(sx[0]), n] = x[:, n].copy()
-	# Finally, delete zero rows if needed
-	start = 0
-	finish = array(y.shape[0])
+            shift1 = shift1 - shift1[-1]
+
+        for n in xrange(sx[1]):
+            y[shift1[n] + arange(sx[0]), n] = x[:, n].copy()
+
+        # Finally, delete zero rows if needed
+        start = 0
+        finish = array(y.shape[0])
         while linalg.norm(y[start, :]) == 0:
-	    start = start + 1
-	while linalg.norm(y[finish-1, :]) == 0:
-	    finish = finish - 1
-	y = y[start:finish, :]
+            start = start + 1
+
+        while linalg.norm(y[finish-1, :]) == 0:
+            finish = finish - 1
+
+        y = y[start:finish, :]
+
         return y
+
     def type23():
         y = zeros([sx[0], sx[1] + abs(shift * (sx[0] - 1))])
         if type == 2:
-	    shift2 = arange(sx[0]) * (-shift)
-	else:
+            shift2 = arange(sx[0]) * (-shift)
+        else:
             shift2 = arange(sx[0]) * shift
-	
-	# Adjust to non-negative shift if needed
+
+        # Adjust to non-negative shift if needed
         if shift2[-1] < 0:
             shift2 = shift2 - shift2[-1]
-	for m in xrange(sx[0]):
-	    y[m, shift2[m] + arange(sx[1])] = x[m, :].copy()
+
+        for m in xrange(sx[0]):
+            y[m, shift2[m] + arange(sx[1])] = x[m, :].copy()
+
         # Finally, delete zero columns if needed
-	start = 0
-	finish = array(y.shape[1])
+        start = 0
+        finish = array(y.shape[1])
+
         while linalg.norm(y[:, start]) == 0:
-	    start = start + 1
-	while linalg.norm(y[:, finish-1]) == 0:
-	    finish = finish - 1
-       	y = y[:, start:finish]
+            start = start + 1
+        while linalg.norm(y[:, finish-1]) == 0:
+            finish = finish - 1
+
+        y = y[:, start:finish]
+
         return y
+
     def errhandler():
         print 'The second input (type) must be one of {0, 1, 2, 3}'
-    
+
     switch = {0: type01,
               1: type01,
               2: type23,
               3: type23}
+
     return switch.get(type,errhandler)()
 
 def resampc(x, type, shift=1, extmod='per'):
-    """ RESAMPC	Resampling along the column
-  
+    """ RESAMPC Resampling along the column
+
     y = resampc(x, type, shift, extmod)
-    
+
     Input:
-    x:	image that is extendable along the column direction
-    type:	either 0 or 1 (0 for shuffering down and 1 for up)
-    shift:	amount of shifts (typically 1)
+    x:  image that is extendable along the column direction
+    type:   either 0 or 1 (0 for shuffering down and 1 for up)
+    shift:  amount of shifts (typically 1)
     extmod: extension mode:
-    'per' 	periodic
-    'ref1'	reflect about the edge pixels
-    'ref2'	reflect, doubling the edge pixels 
-    
+    'per'   periodic
+    'ref1'  reflect about the edge pixels
+    'ref2'  reflect, doubling the edge pixels
+
     Output:
-    y:	resampled image with:
+    y:  resampled image with:
     R1 = [1, shift; 0, 1] or R2 = [1, -shift; 0, 1]"""
 
     if type != 0 and type !=1:
         print 'The second input (type) must be either 0 or 1'
         return
-    
+
     if is_string_like(extmod) != 1:
         print 'EXTMOD arg must be a string'
         return
-    
+
     m, n  = x.shape
     y = zeros(x.shape)
     s = shift
@@ -2020,287 +2133,322 @@ def resampc(x, type, shift=1, extmod='per'):
     if extmod == 'per':
         code = """
         int i, j, k;
-           for(j = 0; j < n; j++){
-	    /* Circular shift in each column */
-	    if(type == 0)
-		k = (s * j) % m;
-	    else
-		k = (-s * j) % m;
-	    
-	    /* Convert to non-negative mod if needed */
-	    if(k < 0)
-		k += m;
-	    
-	    for(i = 0; i < m; i++){
-		if (k >= m)
-		    k -= m;
-		
-		y(i, j) = x(k, j);
-		
-		k++;
-	    }
-	}
+        for(j = 0; j < n; j++) {
+            /* Circular shift in each column */
+            if(type == 0)
+                k = (s * j) % m;
+            else
+                k = (-s * j) % m;
+
+            /* Convert to non-negative mod if needed */
+
+            if(k < 0)
+                k += m;
+
+            for(i = 0; i < m; i++) {
+                if (k >= m)
+                    k -= m;
+                y(i, j) = x(k, j);
+                k++
+            }
+        }
       """
     else:
         print 'Invalid exrmod'
     # call weave
     weave.inline(code, ['m','n', 'x', 'y', 's', 'type'],
                 type_converters = converters.blitz, compiler = 'gcc')
-    
+
     return y
 
 # Polyphase decomposition (used in the ladder structure implementation)
 def qpdec(x, type='1r'):
     """ QPDEC   Quincunx Polyphase Decomposition
-    
-     	[p0, p1] = qpdec(x, [type])
-    
+
+        [p0, p1] = qpdec(x, [type])
+
      Input:
-    	x:	input image
-    	type:	[optional] one of {'1r', '1c', '2r', '2c'} default is '1r'
-    		'1' and '2' for selecting the quincunx matrices:
-    			Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
-    		'r' and 'c' for suppresing row or column		
-    
+        x:  input image
+        type:   [optional] one of {'1r', '1c', '2r', '2c'} default is '1r'
+            '1' and '2' for selecting the quincunx matrices:
+                Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
+            'r' and 'c' for suppresing row or column
+
      Output:
-    	p0, p1:	two qunincunx polyphase components of the image"""
+        p0, p1: two qunincunx polyphase components of the image"""
 
     """ Quincunx downsampling using the Smith decomposition:
-    	Q1 = R1 * D0 * R2
-    	   = R2 * D1 * R1
+        Q1 = R1 * D0 * R2
+           = R2 * D1 * R1
      and,
-    	Q2 = R0 * D0 * R3
-    	   = R3 * D1 * R0
-    
+        Q2 = R0 * D0 * R3
+           = R3 * D1 * R0
+
      where D0 = [2, 0; 0, 1] and D1 = [1, 0; 0, 2].
      See RESAMP for the definition of the resampling matrices R's"""
+
     def type1r(): # Q1 = R1 * D0 * R2
-	y = resamp(x, 1)
-	p0 = resamp(y[::2], 2)
-	# inv(R2) * [0; 1] = [1; 1]
-	p1 = resamp(y[1::2, r_[1:len(y),0]], 2)
+        y = resamp(x, 1)
+        p0 = resamp(y[::2], 2)
+        # inv(R2) * [0; 1] = [1; 1]
+        p1 = resamp(y[1::2, r_[1:len(y),0]], 2)
+
         return p0, p1
+
     def type1c():# Q1 = R2 * D1 * R1
         y = resamp(x, 2)
         p0 = resamp(y[:, ::2], 1)
         # inv(R3) * [0; 1] = [0; 1]
         p1 = resamp(y[:, 1::2], 1)
+
         return p0, p1
+
     def type2r(): # Q2 = R0 * D0 * R3
         y = resamp(x, 0)
         p0 = resamp(y[::2], 3)
         # inv(R1) * [1; 0] = [1; 0]
         p1 = resamp(y[1::2], 3)
+
         return p0, p1
+
     def type2c(): # Q2 = R3 * D1 * R0
         y = resamp(x, 3)
         p0 = resamp(y[:, ::2], 0)
         # inv(R4) * [1; 0] = [1; 1]
         p1 = resamp(y[r_[1:len(y),0], 1::2], 0)
         return p0, p1
+
     def errhandler():
         print 'Invalid argument type'
+
     switch = {'1r': type1r,
               '1c': type1c,
               '2r': type2c,
               '2c': type2c}
+
     return switch.get(type, errhandler)()
 
 def qprec(p0, p1, type='1r'):
     """ QPREC   Quincunx Polyphase Reconstruction
-    
-     	x = qprec(p0, p1, [type])
-    
+
+        x = qprec(p0, p1, [type])
+
      Input:
-    	p0, p1:	two qunincunx polyphase components of the image
-    	type:	[optional] one of {'1r', '1c', '2r', '2c'}, default is '1r'
-    		'1' and '2' for selecting the quincunx matrices:
-    			Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
-    		'r' and 'c' for suppresing row or column		
-    
+        p0, p1: two qunincunx polyphase components of the image
+        type:   [optional] one of {'1r', '1c', '2r', '2c'}, default is '1r'
+            '1' and '2' for selecting the quincunx matrices:
+                Q1 = [1, -1; 1, 1] or Q2 = [1, 1; -1, 1]
+            'r' and 'c' for suppresing row or column
+
      Output:
-    	x:	reconstructed image
-    
+        x:  reconstructed image
+
      Note:
-    	Note that R1 * R2 = R3 * R4 = I so for example,
-    	upsample by R1 is the same with down sample by R2	
-     
-     See also:	QPDEC"""
+        Note that R1 * R2 = R3 * R4 = I so for example,
+        upsample by R1 is the same with down sample by R2
+
+     See also:  QPDEC"""
 
     """ Quincunx downsampling using the Smith decomposition:
-    
+
            Q1 = R1 * D0 * R2
               = R2 * D1 * R1
      and,
            Q2 = R0 * D0 * R3
               = R3 * D1 * R0
-    
+
      where D0 = [2, 0; 0, 1] and D1 = [1, 0; 0, 2].
      See RESAMP for the definition of the resampling matrices R's"""
 
     m, n = p0.shape
 
     def type1r(): # Q1 = R2 * D1 * R3
-	y = zeros((2*m, n))
-	y[::2, :] = resamp(p0, 3)
-	y[1::2, r_[1:len(y),0]] = resamp(p1, 3)
-	x = resamp(y, 0)
+        y = zeros((2*m, n))
+        y[::2, :] = resamp(p0, 3)
+        y[1::2, r_[1:len(y),0]] = resamp(p1, 3)
+        x = resamp(y, 0)
+
         return x
+
     def type1c():  # Q1 = R3 * D2 * R2
         y = zeros((m, 2*n))
         y[:, ::2] = resamp(p0, 0)
         y[:, 1::2] = resamp(p1, 0)
         x = resamp(y, 3)
+
         return x
+
     def type2r():  # Q2 = R1 * D1 * R4
         y = zeros((2*m, n))
         y[::2, :] = resamp(p0, 2)
         y[1::2, :] = resamp(p1, 2)
         x = resamp(y, 1)
         return x
+
     def type2c():  # Q2 = R4 * D2 * R1
         y = zeros((m, 2*n))
         y[:, ::2] = resamp(p0, 1)
         y[r_[1:len(y),0], 1::2] = resamp(p1, 1)
         x = resamp(y, 2)
         return x
+
     def errhandler():
         print 'Invalid argument type'
+
     switch = {'1r': type1r,
               '1c': type1c,
               '2r': type2c,
-              '2c': type2c} 
+              '2c': type2c}
+
     return switch.get(type, errhandler)()
 
 def ppdec(x, type):
     """ PPDEC   Parallelogram Polyphase Decomposition
-    
-     	[p0, p1] = ppdec(x, type)
-    
+
+        [p0, p1] = ppdec(x, type)
+
      Input:
-    	x:	input image
-    	type:	one of {1, 2, 3, 4} for selecting sampling matrices:
-    			P0 = [2, 0; 1, 1]
-    			P1 = [2, 0; -1, 1]
-    			P2 = [1, 1; 0, 2]
-    			P3 = [1, -1; 0, 2]
-    
+        x:  input image
+        type:   one of {1, 2, 3, 4} for selecting sampling matrices:
+                P0 = [2, 0; 1, 1]
+                P1 = [2, 0; -1, 1]
+                P2 = [1, 1; 0, 2]
+                P3 = [1, -1; 0, 2]
+
      Output:
-    	p0, p1:	two parallelogram polyphase components of the image
-    
+        p0, p1: two parallelogram polyphase components of the image
+
      Note:
-    	These sampling matrices appear in the directional filterbank:
-    		P0 = R0 * Q1
-    		P1 = R1 * Q2
-    		P2 = R2 * Q2
-    		P3 = R3 * Q1
-    	where R's are resampling matrices and Q's are quincunx matrices
-    
-     See also:	QPDEC"""
+        These sampling matrices appear in the directional filterbank:
+            P0 = R0 * Q1
+            P1 = R1 * Q2
+            P2 = R2 * Q2
+            P3 = R3 * Q1
+        where R's are resampling matrices and Q's are quincunx matrices
+
+     See also:  QPDEC"""
 
     # Parallelogram polyphase decomposition by simplifying sampling matrices
     # using the Smith decomposition of the quincunx matrices
 
-    def type0(): # P0 = R0 * Q1 = D0 * R2	
-	p0 = resamp(x[::2, :], 2)
-        
-	# R0 * [0; 1] = [1; 1]
-	p1 = resamp(x[1::2, r_[1:len(x),0]], 2)
+    def type0(): # P0 = R0 * Q1 = D0 * R2
+        p0 = resamp(x[::2, :], 2)
+        # R0 * [0; 1] = [1; 1]
+        p1 = resamp(x[1::2, r_[1:len(x),0]], 2)
+
         return p0, p1
+
     def type1(): # P1 = R1 * Q2 = D0 * R3
         p0 = resamp(x[::2, :], 3)
-        
         # R1 * [1; 0] = [1; 0]
         p1 = resamp(x[1::2, :], 3)
+
         return p0, p1
+
     def type2(): # P2 = R2 * Q2 = D1 * R0
         p0 = resamp(x[:, ::2], 0)
-        
+
         # R2 * [1; 0] = [1; 1]
         p1 = resamp(x[r_[1:len(x),0], 1::2] , 0)
+
         return p0, p1
+
     def type3(): # P3 = R3 * Q1 = D1 * R1
         p0 = resamp(x[:, ::2], 1)
-        
+
         # R3 * [0; 1] = [0; 1]
         p1 = resamp(x[:, 1::2], 1)
+
         return p0, p1
+
     def errhandler():
         print 'Invalid argument type'
+
     switch = {0: type0,
               1: type1,
               2: type2,
               3: type3}
+
     return switch.get(type, errhandler)()
 
 def pprec(p0, p1, type):
     """ PPREC   Parallelogram Polyphase Reconstruction
-    
-     	x = pprec(p0, p1, type)
-    
+
+        x = pprec(p0, p1, type)
+
      Input:
-    	p0, p1:	two parallelogram polyphase components of the image
-    	type:	one of {0, 1, 2, 3} for selecting sampling matrices:
-    			P0 = [2, 0; 1, 1]
-    			P1 = [2, 0; -1, 1]
-    			P2 = [1, 1; 0, 2]
-    			P3 = [1, -1; 0, 2]
-    
+        p0, p1: two parallelogram polyphase components of the image
+        type:   one of {0, 1, 2, 3} for selecting sampling matrices:
+                P0 = [2, 0; 1, 1]
+                P1 = [2, 0; -1, 1]
+                P2 = [1, 1; 0, 2]
+                P3 = [1, -1; 0, 2]
+
      Output:
-    	x:	reconstructed image
-    
+        x:  reconstructed image
+
      Note:
-    	These sampling matrices appear in the directional filterbank:
-    		P0 = R0 * Q1
-    		P1 = R1 * Q2
-    		P2 = R2 * Q2
-    		P3 = R3 * Q1
-    	where R's are resampling matrices and Q's are quincunx matrices
-    
-    	Also note that R0 * R1 = R2 * R3 = I so for example,
-    	upsample by R1 is the same with down sample by R2	
-    
-     See also:	PPDEC"""
+        These sampling matrices appear in the directional filterbank:
+            P0 = R0 * Q1
+            P1 = R1 * Q2
+            P2 = R2 * Q2
+            P3 = R3 * Q1
+        where R's are resampling matrices and Q's are quincunx matrices
+
+        Also note that R0 * R1 = R2 * R3 = I so for example,
+        upsample by R1 is the same with down sample by R2
+
+     See also:  PPDEC"""
 
     # Parallelogram polyphase decomposition by simplifying sampling matrices
     # using the Smith decomposition of the quincunx matrices
 
     m, n = shape(p0)
 
-    def type0():	# P1 = R1 * Q1 = D1 * R3
-	x = zeros((2*m, n))
-	x[::2, :] = resamp(p0, 3)
-	x[1::2, r_[1:len(x),0]] = resamp(p1, 3)
+    def type0():    # P1 = R1 * Q1 = D1 * R3
+        x = zeros((2*m, n))
+        x[::2, :] = resamp(p0, 3)
+        x[1::2, r_[1:len(x),0]] = resamp(p1, 3)
+
         return x
-    def type1():	# P2 = R2 * Q2 = D1 * R4
+
+    def type1():    # P2 = R2 * Q2 = D1 * R4
         x = zeros((2*m, n))
         x[::2, :] = resamp(p0, 2)
         x[1::2,:] = resamp(p1, 2)
+
         return x
-    def type2():	# P3 = R3 * Q2 = D2 * R1
+
+    def type2():    # P3 = R3 * Q2 = D2 * R1
         x = zeros((m, 2*n))
         x[:, ::2] = resamp(p0, 1)
         x[r_[1:len(x),0], 1::2] = resamp(p1, 1)
+
         return x
-    def type3():	# P4 = R4 * Q1 = D2 * R2
+
+    def type3():    # P4 = R4 * Q1 = D2 * R2
         x = zeros((m, 2*n))
         x[:, ::2] = resamp(p0, 0)
         x[:, 1::2] = resamp(p1, 0)
+
         return x
+
     def errhandler():
         print 'Invalid argument type'
+
     switch = {0: type0,
               1: type1,
               2: type2,
               3: type3}
+
     return switch.get(type, errhandler)()
 
 # Support functions for generating filters
 def ffilters(h0, h1):
-    """ FFILTERS	Fan filters from diamond shape filters
+    """ FFILTERS    Fan filters from diamond shape filters
     [f0, f1] = ffilters(h0, h1)"""
 
-    f0 = [[None]] * 4 
+    f0 = [[None]] * 4
     f1 = [[None]] * 4
 
     # For the first half channels
@@ -2310,7 +2458,7 @@ def ffilters(h0, h1):
     f0[1] = modulate2(h0, 'c')
     f1[1] = modulate2(h1, 'c')
 
-    # For the second half channels, 
+    # For the second half channels,
     # use the transposed filters of the first half channels
     f0[2] = f0[0].T
     f1[2] = f1[0].T
@@ -2364,7 +2512,7 @@ def mctrans(b,t):
     # Convert the 1-D filter b to SUM_n a(n) cos(wn) form
     n = (size(b)-1) / 2.0
     b = rot90(fftshift(rot90(b,2)),2) #inverse fftshift
-    
+
     a = c_[b[:, 0], 2*b[:, 1:n+1]]
 
     inset = floor((array(t.shape)-1)/2).astype(int)
@@ -2397,34 +2545,41 @@ def modulate2(x, type, center=array([[0, 0]])):
     both directions.
     CENTER especify the origin of modulation as
     floor(size(x)/2)+center(default is [0, 0])"""
-    
+
     # Size and origin
     s = array([x.shape])
     o = floor(s / 2.0) + center
-    
+
     n1 = array([arange(0,s[:, 0])]) - o[:, 0]
     n2 = array([arange(0,s[:, 1])]) - o[:, 1]
 
     def do_r():
         m1 = (-1)**n1
         y = x * tile(m1.T, (1, s[0,1]))
+
         return y
+
     def do_c():
         m2 = (-1)**n2
         y = x * tile(m2, (s[0,0],1))
+
         return y
+
     def do_b():
         m1 = (-1)**n1
-	m2 = (-1)**n2
+        m2 = (-1)**n2
         m = m1.T * m2
-	y = x * m
+        y = x * m
+
         return y
+
     def errhandler():
         print 'Invalid input type'
 
     switch = {'r': do_r,
               'c': do_c,
               'b': do_b}
+
     return switch.get(str.lower(type[0]),errhandler)()
 
 def reverse2(x):
@@ -2437,14 +2592,14 @@ def reverse2(x):
 def backsamp(y):
     """ BACKSAMP
     Backsampling the subband images of the directional filter bank
-    
+
        y = backsamp(y)
-    
+
      Input and output are cell vector of dyadic length
-    
-     This function is called at the end of the DFBDEC to obtain subband images 
+
+     This function is called at the end of the DFBDEC to obtain subband images
      with overall sampling as diagonal matrices
-    
+
      See also: DFBDEC"""
 
     # Number of decomposition tree levels
@@ -2459,31 +2614,31 @@ def backsamp(y):
             y[k] = resamp(y[k], 3)
             y[k][:, 0::2] = resamp(y[k][:, 0::2], 0)
             y[k][:, 1::2] = resamp(y[k][:, 1::2], 0)
-    
-    elif n > 2:    
+    elif n > 2:
         N = 2**(n-1)
         for k in xrange(0,2**(n-2)):
             shift = 2*(k+1) - (2**(n-2) + 1)
             # The first half channels
             y[2*k] = resamp(y[2*k], 2, shift)
-            y[2*k+1] = resamp(y[2*k+1], 2, shift)            
+            y[2*k+1] = resamp(y[2*k+1], 2, shift)
             # The second half channels
             y[2*k+N] = resamp(y[2*k+N], 0, shift)
-            y[2*k+1+N] = resamp(y[2*k+1+N], 0, shift)	
+            y[2*k+1+N] = resamp(y[2*k+1+N], 0, shift)
+
     return y
 
 def rebacksamp(y):
     """ REBACKSAMP   Re-backsampling the subband images of the DFB
-    
-    	y = rebacksamp(y)
-    
+
+        y = rebacksamp(y)
+
      Input and output are cell vector of dyadic length
-    
+
      This function is call at the begin of the DFBREC to undo the operation
      of BACKSAMP before process filter bank reconstruction.  In otherword,
      it is inverse operation of BACKSAMP
-    
-     See also:	BACKSAMP, DFBREC"""
+
+     See also:  BACKSAMP, DFBREC"""
 
     # Number of decomposition tree levels
     n = int(log2(len(y)))
@@ -2503,10 +2658,11 @@ def rebacksamp(y):
             shift = 2*(k+1) - (2**(n-2) + 1)
             #The first half channels
             y[2*k] = resamp(y[2*k], 2, -shift)
-            y[2*k+1] = resamp(y[2*k+1], 2, -shift)            
+            y[2*k+1] = resamp(y[2*k+1], 2, -shift)
             #% The second half channels
             y[2*k+N] = resamp(y[2*k+N], 0, -shift)
             y[2*k+1+N] = resamp(y[2*k+1+N], 0, -shift)
+
     return y
 
 # Other support functions
@@ -2518,10 +2674,10 @@ def smothborder(x, n):
     Input:
     x:      the input signal or image
     n:      number of samples near the border that will be smoothed
-    
+
     Output:
     y:      output image
-    
+
     Note: This function provides a simple way to avoid border effect."""
 
     # Hamming window of size 2N
