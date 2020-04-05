@@ -18,9 +18,8 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from numpy import *
-from resamp import *
-
+from resamp import resamp
+import math
 
 def backsamp(y):
     """ BACKSAMP
@@ -28,7 +27,7 @@ def backsamp(y):
 
        y = backsamp(y)
 
-     Input and output are cell vector of dyadic length
+     Input and output are lists of dyadic length
 
      This function is called at the end of the DFBDEC to obtain subband images
      with overall sampling as diagonal matrices
@@ -36,27 +35,28 @@ def backsamp(y):
      See also: DFBDEC"""
 
     # Number of decomposition tree levels
-    n = int(log2(len(y)))
+    n = int(math.log2(len(y)))
 
-    if (n != round(n)) or (n < 1):
-        print 'Input must be a cell vector of dyadic length'
-    if n == 1:
+    if n < 1:
+        print('Input must be a cell vector of dyadic length')
+    elif n == 1:
         # One level, the decomposition filterbank shoud be Q1r
         # Undo the last resampling (Q1r = R2 * D1 * R3)
-        for k in xrange(0, 2):
+        for k in range(2):
             y[k] = resamp(y[k], 3, None, None)
-            y[k][:, 0::2] = resamp(y[k][:, 0::2], 0, None, None)
+            y[k][:, ::2] = resamp(y[k][:, ::2], 0, None, None)
             y[k][:, 1::2] = resamp(y[k][:, 1::2], 0, None, None)
-
-    elif n > 2:
+    else:
         N = 2**(n - 1)
-        for k in xrange(0, 2**(n - 2)):
+        for k in range(2**(n - 2)):
             shift = 2 * (k + 1) - (2**(n - 2) + 1)
+
             # The first half channels
-            y[2 * k] = resamp(y[2 * k], 2, shift, None)
-            y[2 * k + 1] = resamp(y[2 * k + 1], 2, shift, None)
+            y[2*k] = resamp(y[2*k], 2, shift, None)
+            y[2*k+1] = resamp(y[2*k+1], 2, shift, None)
+
             # The second half channels
-            y[2 * k + N] = resamp(y[2 * k + N], 0, shift, None)
-            y[2 * k + 1 + N] = resamp(y[2 * k + 1 + N], 0, shift, None)
+            y[2*k+N] = resamp(y[2*k+N], 0, shift, None)
+            y[2*k+1+N] = resamp(y[2*k+1+N], 0, shift, None)
 
     return y

@@ -18,179 +18,189 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from numpy import *
+import numpy as np
+import math
 
-
-def computescale(cellDFB, dRatio, nStart, nEnd, coefMode):
+def computescale(subband_dfb, ratio, start, end, mode):
     """
     COMPUTESCALE   Comupute display scale for PDFB coefficients
 
-    computescale(cellDFB, [dRatio, nStart, nEnd, coefMode])
+    computescale(subband_dfb, [ratio, start, end, mode])
 
     Input:
-    cellDFB:	a cell vector, one for each layer of
-    subband images from DFB.
-    dRatio:
-    display ratio. It ranges from 1.2 to 10.
 
-    nStart:
-    starting index of the cell vector cellDFB for the computation.
+    subband_dfb:
+	A multidimentional list, one for each layer of subband images from DFB.
+    Each subband is represented as a numpy array
+    ratio:
+    Display ratio. It ranges from 1.2 to 10.
+
+    start:
+    Starting index of the cell vector subband_dfb for the computation.
     Its default value is 1.
-    nEnd:
-    ending index of the cell vector cellDFB for the computation.
-    Its default value is the length of cellDFB.
-    coefMode:
+
+    end:
+    Ending index of the cell vector subband_dfb for the computation.
+    Its default value is the length of subband_dfb.
+
+    mode:
     coefficients mode (a string):
     'real' ----  Highpass filters use the real coefficients.
     'abs' ------ Highpass filters use the absolute coefficients.
     It's the default value
     Output:
-    vScales ---- 1 X 2 vectors for two scales.
-
-    History:
-   10/03/2003  Creation.
-   04/01/2004  Limit the display scale into the range of
-   [min(celldfb), max(celldfb)] or [min(abs(celldfb)), max(abs(celldfb))]
+    Scales ----- 1 X 2 list for two scales.
 
    See also:     SHOWPDFB"""
 
-    if ~iscell(cellDFB):
-        print 'Error in computescale.py!
-        The first input must be a cell vector'
+    if not isinstance(subband_dfb, list):
+        print('Error in computescale.py! The first input must be a cell vector')
 
     # Display ratio
-    if dRatio is None:
-        dRatio = 2
-    elif dRatio < 1:
-        print 'Warning! the display ratio must be larger than 1!
-        Its defualt value is 2!'
-    # Starting index for the cell vector cellDFB
-    if nStart is None:
-        nStart = 1
-    elif nStart < 1 or nStart > len(cellDFB):
-        print 'Warning! The starting index from 1 to length(cellDFB)!
-        Its defualt value is 1!'
-        nStart = 1
+    if ratio is None:
+        ratio = 2
+    elif ratio < 1:
+        print('Warning! the display ratio must be larger than 1!' +
+              'Its defualt value is 2!')
 
-    # Starting index for the cell vector cellDFB
-    if nEnd is None:
-        nEnd = len(cellDFB)
-    elif nEnd < 1 or nEnd > len(cellDFB):
-        print 'Warning! The ending index from 1 to length(cellDFB)!
-        Its defualt value is length(cellDFB)!'
-        nEnd = len(cellDFB)
+    # Starting index for the cell vector subband_dfb
+    if start is None:
+        start = 0
+    elif start < 0 or start > len(subband_dfb):
+        print('Warning! The starting index from 0 to length(subband_dfb)!' +
+              'Its defualt value is 0!')
+        start = 0
+
+    # Starting index for the cell vector subband_dfb
+    if end is None:
+        end = len(subband_dfb)
+    elif end < 0 or end > len(subband_dfb):
+        print('Warning! The ending index from 1 to length(subband_dfb)!' +
+              'Its default value is length(subband_dfb)!')
+        end = len(subband_dfb)
+
     # Coefficient mode
-    if coefMode is None:
-        coefMode = 'abs'
-    elif coefMode != 'real' and coefMode != 'abs':
-        print 'Warning! There are only two coefficients mode: real, abs!
-        Its defualt value is "abs"!'
-        coefMode = 'abs'
+    if mode is None:
+        mode = 'abs'
+    elif mode != 'real' and mode != 'abs':
+        print('Warning! There are only two coefficients mode: real, abs!' +
+              'Its default value is "abs"!')
+        mode = 'abs'
 
     # Initialization
-    dSum = 0
-    dMean = 0
-    # Added on 04/01/04 by jpzhou
-    dMin = 1.0e14
-    dMax = -1.0e14
-    dAbsMin = 1.0e14
-    dAbsMax = -1.0e14
-    dAbsSum = 0
-    nCount = 0
-    vScales = zeros((1, 2))
+    sum = 0
+    mean = 0
+    real_min = 1.0e14
+    real_max = -1.0e14
+    abs_min = 1.0e14
+    abs_max = -1.0e14
+    abs_sum = 0
+    count = 0
+    scales = np.zeros((1, 2))
 
-    if coefMode == 'real':  # Use the real coefficients
+    if mode == 'real':  # Use the real coefficients
         # Compute the mean of all coefficients
-        for i in xrange(nStart, nEnd):
-            if iscell(cellDFB[i]):  # Check whether it is a cell vector
-                m = len(cellDFB[i])
-                for j in xrange(0, m):
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list):
+                m = len(subband_dfb[i])
+                for j in range(m):
 
-                    # Added on 04/01/04 by jpzhou
-                    dUnitMin = cellDFB[i][j].min()
-                    if dUnitMin < dMin:
-                        dMin = dUnitMin
-                        dUnitMax = cellDFB[i][j].max()
-                        if dUnitMax > dMax:
-                            dMax = dUnitMax
-                            dSum = dSum + sum(cellDFB[i][j])
-                            nCount = nCount + cellDFB[i][j].size
+                    subband_min = subband_dfb[i][j].min()
+                    if subband_min < real_min:
+                        real_min = subband_min
+
+                    subband_max = subband_dfb[i][j].max()
+                    if subband_max > real_max:
+                        real_max = subband_max
+
+                    sum = sum + np.sum(subband_dfb[i][j])
+                    count = count + subband_dfb[i][j].size
             else:
-                # Added on 04/01/04 by jpzhou
-                dUnitMin = cellDFB[i].min()
-                if dUnitMin < dMin:
-                    dMin = dUnitMin
-                    dUnitMax = cellDFB[i].max()
-                    if dUnitMax > dMax:
-                        dMax = dUnitMax
-                        dSum = dSum + sum(cellDFB[i])
-                        nCount = nCount + cellDFB[i].size
-        if nCount < 2 or abs(dSum) < 1e-10:
-            print 'Error in computescale.m! No data in this unit!'
+                subband_min = subband_dfb[i].min()
+                if subband_min < real_min:
+                    real_min = subband_min
+
+                subband_max = subband_dfb[i].max()
+                if subband_max > real_max:
+                    real_max = subband_max
+
+                sum = sum + np.sum(subband_dfb[i])
+                count = count + subband_dfb[i].size
+
+
+        if count < 2 or abs(sum) < 1e-10:
+            print('Error in computescale.m! No data in this unit!')
         else:
-            dMean = dSum / nCount
+            mean = sum / count
 
         # Compute the STD.
-        dSum = 0
-        for i in xrange(nStart, nEnd):
-            if iscell(cellDFB[i]):  # Check whether it is a cell vector
-                m = len(cellDFB[i])
-                for j in xrange(0, m):
-                    dSum = dSum + sum((cellDFB[i][j] - dMean)**2)
-                    #nCount = nCount + cellDFB[i][j].size
+        sum = 0
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list): 
+                m = len(subband_dfb[i])
+                for j in range(m):
+                    sum = sum + sum((subband_dfb[i][j] - mean)**2)
             else:
-                dSum = dSum + sum((cellDFB[i] - dMean)**2)
-                # nCount = nCount + prod( size( cellDFB{i} ) )
+                sum = sum + sum((subband_dfb[i] - mean)**2)
 
-        dStd = sqrt(dSum / (nCount - 1))
+        std = math.sqrt(sum / (count - 1))
 
-        # Modified on 04/01/04
-        #dMin = -1.0e10 ;
-        #dMax = 1.0e10 ;
-        vScales[0] = max(dMean - dRatio * dStd, dMin)
-        vScales[1] = min(dMean + dRatio * dStd, dMax)
+        scales[0] = max(mean - ratio * std, real_min)
+        scales[1] = min(mean + ratio * std, real_max)
 
     else:  # Use the absolute coefficients
         # Compute the mean of absolute values
-        for i in xrange(nStart, nEnd):
-            if iscell(cellDFB[i]):  # Check whether it is a cell vector
-                m = len(cellDFB{i})
-                for j in xrange(0, m):
-                    # Added on 04/01/04 by jpzhou
-                    dUnitMin = abs(cellDFB[i][j]).min()
-                    if dUnitMin < dAbsMin:
-                        dAbsMin = dUnitMin
-                    dUnitMax = abs(cellDFB[i][j]).max()
-                    if dUnitMax > dAbsMax:
-                        dAbsMax = dUnitMax
-                dAbsSum = dAbsSum + sum(abs(cellDFB[i][j]))
-                nCount = nCount + cellDFB[i][j].size
-            else:
-                # Added on 04/01/04 by jpzhou
-                dUnitMin = abs(cellDFB[i]).min()
-            if dUnitMin < dAbsMin:
-                dAbsMin = dUnitMin
-            dUnitMax = abs(cellDFB[i]).max()
-            if dUnitMax > dAbsMax:
-                dAbsMax = dUnitMax
-            dAbsSum = dAbsSum + sum(abs(cellDFB[i]))
-            nCount = nCount + cellDFB[i].size
-        if nCount < 2 or dAbsSum < 1e-10:
-            'Error in computescale! No data in this unit!'
-        else:
-            dAbsMean = dAbsSum / nCount
-        # Compute the std of absolute values
-        dSum = 0
-        for i in xrange(nStart, nEnd):
-            if iscell(cellDFB[i]):  # Check whether it is a cell vector
-                m = len(cellDFB[i])
-                for j in xrange(0, m):
-                    dSum = dSum + sum((abs(cellDFB[i][j]) - dAbsMean)**2)
-            else:
-                dSum = dSum + sum((abs(cellDFB{i}) - dAbsMean)**2)
-        dStd = sqrt(dSum / (nCount - 1))
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list):
+                m = len(subband_dfb[i])
+                for j in range(m):
 
-    # Modified on 04/01/04
-    # Compute the scale values
-    vScales[0] = max(dAbsMean - dRatio * dStd, dAbsMin)
-    vScales[1] = min(dAbsMean + dRatio * dStd, dAbsMax)
+                    subband_min = abs(subband_dfb[i][j]).min()
+                    if subband_min < abs_min:
+                        abs_min = subband_min
+
+                    subband_max = abs(subband_dfb[i][j]).max()
+                    if subband_max > abs_max:
+                        abs_max = subband_max
+
+                abs_sum = abs_sum + np.sum(abs(subband_dfb[i][j]))
+                count = count + subband_dfb[i][j].size
+            else:
+                subband_min = abs(subband_dfb[i]).min()
+                if subband_min < abs_min:
+                    abs_min = subband_min
+
+                subband_max = abs(subband_dfb[i]).max()
+
+                if subband_max > abs_max:
+                    abs_max = subband_max
+
+                abs_sum = abs_sum + np.sum(abs(subband_dfb[i]))
+                count = count + subband_dfb[i].size
+
+        if count < 2 or abs_sum < 1e-10:
+            print('Error in computescale! No data in this unit!')
+        else:
+            abs_mean = abs_sum / count
+
+        # Compute the std of absolute values
+        sum = 0
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list): 
+                m = len(subband_dfb[i])
+                for j in range(m):
+                    sum = sum + np.sum((abs(subband_dfb[i][j]) - abs_mean)**2)
+            else:
+                sum = sum + np.sum((abs(subband_dfb[i]) - abs_mean)**2)
+
+        std = math.sqrt(sum / (count - 1))
+
+        # Compute the scale values
+        scales[0] = max(abs_mean - ratio * std, abs_min)
+        scales[1] = min(abs_mean + ratio * std, abs_max)
+
+    return scales
+
+
+
+
