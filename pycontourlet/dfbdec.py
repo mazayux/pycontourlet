@@ -100,6 +100,6 @@ def dfbdec(x, fname, n):
     y = backsamp(y)
 
     # Flip the order of the second half channels
-    y[2**(n - 1)::] = y[::-1][:2**(n - 1)]
+    y = y[2**(n - 1):] + y[:2**(n - 1)]
 
     return y
