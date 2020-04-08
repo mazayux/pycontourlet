@@ -3,7 +3,7 @@
 #
 #    A Python library for the Contourlet Transform.
 #
-#    Copyright (C) 2011 Mazay Jiménez
+#    Copyright (C) 2011-2020 Mazay Jiménez
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -18,15 +18,12 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from numpy import *
-from dfilters import *
-from modulate2 import *
-from ffilters import *
-from backsamp import *
-from fbdec import *
-from dfbrec import *
-import pdb
-
+from dfilters import dfilters
+from modulate2 import modulate2
+from ffilters import ffilters
+from backsamp import backsamp
+from fbdec import fbdec
+from dfbrec import fbdec
 
 def dfbdec(x, fname, n):
     """ DFBDEC   Directional Filterbank Decomposition
@@ -39,7 +36,7 @@ def dfbdec(x, fname, n):
     n:      number of decomposition tree levels
 
     Output:
-    y:	    subband images in a cell vector of length 2^n
+    y:	    subband images in the list of length 2^n
 
     Note:
     This is the general version that works with any FIR filters
@@ -47,7 +44,7 @@ def dfbdec(x, fname, n):
     See also: DFBREC, FBDEC, DFILTERS"""
 
     if (n != round(n)) or (n < 0):
-        print 'Number of decomposition levels must be a non-negative integer'
+        raise ValueError('Number of decomposition levels must be a non-negative integer')
 
     if n == 0:
         # No decomposition, simply copy input to output
@@ -63,6 +60,7 @@ def dfbdec(x, fname, n):
     # k1: filters the second dimension (column)
     k0 = modulate2(h0, 'c', None)
     k1 = modulate2(h1, 'c', None)
+
     # Tree-structured filter banks
     if n == 1:
         # Simplest case, one level
@@ -72,38 +70,36 @@ def dfbdec(x, fname, n):
         # For the cases that n >= 2
         # First level
         x0, x1 = fbdec(x, k0, k1, 'q', '1r', 'per')
+
         # Second level
         y = [[None]] * 4
         y[0], y[1] = fbdec(x0, k0, k1, 'q', '2c', 'qper_col')
         y[2], y[3] = fbdec(x1, k0, k1, 'q', '2c', 'qper_col')
+
         # Fan filters from diamond filters
         f0, f1 = ffilters(h0, h1)
+
         # Now expand the rest of the tree
-        for l in xrange(3, n + 1):
+        for l in range(2, n):
             # Allocate space for the new subband outputs
             y_old = y[:]
             y = [[None]] * 2**l
+
             # The first half channels use R1 and R2
-            for k in xrange(0, 2**(l - 2)):
-                i = mod(k, 2)
+            for k in range(0, 2**(l-2)):
+                i = k % 2
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
-            for k in xrange(2**(l - 2), 2**(l - 1)):
-                i = mod(k, 2) + 2
+            for k in range(2**(l-2), 2**(l-1)):
+                i = k % 2 + 2
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
     # Back sampling (so that the overal sampling is separable)
     # to enhance visualization
     y = backsamp(y)
+
     # Flip the order of the second half channels
     y[2**(n - 1)::] = y[::-1][:2**(n - 1)]
 
     return y
-
-
-x = arange(1, 26).reshape(5, 5)
-pdb.set_trace()
-y = dfbdec(x, 'dmaxflat7', 1)
-z = dfbrec(y, 'dmaxflat7')
-print z
