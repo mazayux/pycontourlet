@@ -3,7 +3,7 @@
 #
 #    A Python library for the Contourlet Transform.
 #
-#    Copyright (C) 2011 Mazay Jiménez
+#    Copyright (C) 2011-2020 Mazay Jiménez
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
