@@ -19,11 +19,12 @@
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from numpy import *
-from scipy import weave, signal
+from scipy import signal
 from scipy.fftpack import fftshift
-from scipy.weave import converters
-from matplotlib.cbook import is_string_like
 import pdb
+import cython
+
+
 # Laplacian Pyramid
 
 
@@ -230,7 +231,7 @@ def dfbdec(x, fname, n):
     See also: DFBREC, FBDEC, DFILTERS"""
 
     if (n != round(n)) or (n < 0):
-        print 'Number of decomposition levels must be a non-negative integer'
+        print ('Number of decomposition levels must be a non-negative integer')
 
     if n == 0:
         # No decomposition, simply copy input to output
@@ -302,7 +303,7 @@ def dfbrec(y, fname):
     n = int(log2(len(y)))
 
     if (n != round(n)) or (n < 0):
-        print 'Number of reconstruction levels must be a non-negative integer'
+        print('Number of reconstruction levels must be a non-negative integer')
 
     if n == 0:
         # Simply copy input to output
@@ -376,7 +377,7 @@ def dfbdec_l(x, f, n):
     y:  subband images in a cell array (of size 2^n x 1)"""
 
     if (n != round(n)) or (n < 0):
-        print 'Number of decomposition levels must be a non-negative integer'
+        print('Number of decomposition levels must be a non-negative integer')
 
     if n == 0:
         # No decomposition, simply copy input to output
@@ -447,7 +448,7 @@ def dfbrec_l(y, f):
     n = int(log2(len(y)))
 
     if (n != round(n)) or (n < 0):
-        print 'Number of reconstruction levels must be a non-negative integer'
+        print('Number of reconstruction levels must be a non-negative integer')
 
     if n == 0:
         # Simply copy input to output
@@ -559,7 +560,7 @@ def fbdec(x, h0, h1, type1, type2, extmod='per'):
         y0 = qdown(y0, pqtype[type2])
         y1 = qdown(y1, pqtype[type2])
     else:
-        print 'Invalid input type1'
+        print('Invalid input type1')
     return y0, y1
 
 
@@ -604,7 +605,7 @@ def fbrec(y0, y1, h0, h1, type1, type2, extmod='per'):
         y0 = qup(y0, pqtype[type2])
         y1 = qup(y1, pqtype[type2])
     else:
-        print 'Invalid input type1'
+        print('Invalid input type1')
 
     # Stagger sampling if filter is odd-size
     if all(mod(h1.shape, 2)):
@@ -670,7 +671,7 @@ def fbdec_l(x, f, type1, type2, extmod='per'):
     f[:, ::2] = -f[:, ::2]
 
     if min(x.shape) == 1:
-        print 'Input is a vector, unpredicted output!'
+        print('Input is a vector, unpredicted output!')
 
     # Polyphase decomposition of the input image
     if str.lower(type1[0]) == 'q':
@@ -680,7 +681,7 @@ def fbdec_l(x, f, type1, type2, extmod='per'):
         # Parallelogram polyphase decomposition
         p0, p1 = ppdec(x, type2)
     else:
-        print 'Invalid argument type1'
+        print('Invalid argument type1')
 
     # Ladder network structure
     y0 = (1 / sqrt(2)) * (p0 - sefilter2(p1, f, f, extmod, array([[1], [1]])))
@@ -729,7 +730,7 @@ def fbrec_l(y0, y1, f, type1, type2, extmod='per'):
         # Parallelogram polyphase reconstruction
         x = pprec(p0, p1, type2)
     else:
-        print 'Invalid argument type1'
+        print('Invalid argument type1')
 
     return x
 
@@ -798,7 +799,7 @@ def pfilters(fname):
         n = lf / 2.0
 
         if n != floor(n):
-            print "The input allpass filter must be even length"
+            print('The input allpass filter must be even length')
 
         # beta(z^2)
         beta2 = zeros((1, 2 * lf - 1))
@@ -821,7 +822,7 @@ def pfilters(fname):
         return h, g
 
     def errhandler():
-        print 'Invalid filter name'
+        print('Invalid filter name')
 
     switch = {'9/7': filter97,
               '9-7': filter97,
@@ -1322,7 +1323,7 @@ def dfilters(fname, type):
         return h0, h1
 
     def errhandler():
-        print 'Unrecognized ladder structure filter name'
+        print('Unrecognized ladder structure filter name')
 
     switch = {'haar': filterHaar,
               'vk': filterVk,
@@ -1371,7 +1372,7 @@ def ldfilter(fname):
         return v
 
     def errhandler():
-        print 'Unrecognized ladder structure filter name'
+        print('Unrecognized ladder structure filter name')
     switch = {'pkva': pkva12,
               'pkva12': pkva12,
               'pkva8': pkva8,
@@ -1388,7 +1389,7 @@ def dmaxflat(N, d):
     being 1 or 0 depending on use
     """
     if (N > 7 or N < 1):
-        print 'N must be in {1,2,3,4,5,6,7}'
+        print('N must be in {1,2,3,4,5,6,7}')
 
     def dmaxflat1():
         h = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0
@@ -1463,7 +1464,7 @@ def dmaxflat(N, d):
         return h
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
     switch = {1: dmaxflat1,
               2: dmaxflat2,
               3: dmaxflat3,
@@ -1611,7 +1612,7 @@ def extend2(x, ru, rd, cl, cr, extmod):
         return y
 
     def errhandler():
-        print 'Invalid input for EXTMOD'
+        print('Invalid input for EXTMOD')
 
     switch = {'per': extmodPer,
               'qper_row': extmodQper_row,
@@ -1693,7 +1694,7 @@ def pdown(x, type, phase=0):
         return y
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {0: type0,
               1: type1,
@@ -1778,7 +1779,7 @@ def pup(x, type, phase=0):
         return y
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {0: type0,
               1: type1,
@@ -1849,7 +1850,7 @@ def qdown(x, type='1r', extmod='per', phase=0):
         return y
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {'1r': type1r,
               '1c': type1c,
@@ -1936,7 +1937,7 @@ def qup(x, type='1r', phase=0):
         return y
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {'1r': type1r,
               '1c': type1c,
@@ -1990,7 +1991,7 @@ def qupz(x, type=1):
         return y
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {1: type1,
               2: type2}
@@ -2071,7 +2072,7 @@ def resamp(x, type, shift=1, extmod='per'):
         return y
 
     def errhandler():
-        print 'The second input (type) must be one of {0, 1, 2, 3}'
+        print('The second input (type) must be one of {0, 1, 2, 3}')
 
     switch = {0: type01,
               1: type01,
@@ -2159,7 +2160,7 @@ def resampz(x, type, shift=1):
         return y
 
     def errhandler():
-        print 'The second input (type) must be one of {0, 1, 2, 3}'
+        print('The second input (type) must be one of {0, 1, 2, 3}')
 
     switch = {0: type01,
               1: type01,
@@ -2169,7 +2170,7 @@ def resampz(x, type, shift=1):
     return switch.get(type, errhandler)()
 
 
-def resampc(x, type, shift=1, extmod='per'):
+def resampc(x: cython.double[:, :], type: cython.int, shift: cython.int = 1, extmod='per'):
     """ RESAMPC Resampling along the column
 
     y = resampc(x, type, shift, extmod)
@@ -2188,19 +2189,49 @@ def resampc(x, type, shift=1, extmod='per'):
     R1 = [1, shift; 0, 1] or R2 = [1, -shift; 0, 1]"""
 
     if type != 0 and type != 1:
-        print 'The second input (type) must be either 0 or 1'
+        print('The second input (type) must be either 0 or 1')
         return
 
-    if is_string_like(extmod) != 1:
-        print 'EXTMOD arg must be a string'
+    if type(extmod) != str:
+        print('EXTMOD arg must be a string')
         return
 
-    m, n = x.shape
-    y = zeros(x.shape)
-    s = shift
+    m: cython.int = x.shape[0]
+    n: cython.int  = x.shape[1]
+    y: cython.double[:, :] = zeros(x.shape)
+    s: cython.int = shift
+
+    i: cython.int
+    j: cython.int
+    k: cython.int
 
     if extmod == 'per':
-        code = """
+        """Resampling column-wise:
+        y[i, j] = x[<i+sj>, j]  if type == 0
+        y[i, j] = x[<i-sj>, j]  if type == 1
+        """
+
+        for j in range(n):
+            # Circular shift in each column
+            if type == 0:
+                k = (s * j) % m
+            else:
+                k = (-s * j) % m
+
+            # Convert to non-negative mod if needed
+
+            if k < 0:
+                k += m
+
+            for i in range(m):
+                if k >= m:
+                    k -= m
+                y[i, j] = x [k, j]
+                k += 1
+
+        """
+        C code
+
         int i, j, k;
         for(j = 0; j < n; j++) {
             /* Circular shift in each column */
@@ -2223,10 +2254,10 @@ def resampc(x, type, shift=1, extmod='per'):
         }
       """
     else:
-        print 'Invalid exrmod'
-    # call weave
-    weave.inline(code, ['m', 'n', 'x', 'y', 's', 'type'],
-                 type_converters=converters.blitz, compiler='gcc')
+        print('Invalid exrmod')
+    # call weave - deprecated in python 3
+    #weave.inline(code, ['m', 'n', 'x', 'y', 's', 'type'],
+    #             type_converters=converters.blitz, compiler='gcc')
 
     return y
 
@@ -2290,7 +2321,7 @@ def qpdec(x, type='1r'):
         return p0, p1
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {'1r': type1r,
               '1c': type1c,
@@ -2365,7 +2396,7 @@ def qprec(p0, p1, type='1r'):
         return x
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {'1r': type1r,
               '1c': type1c,
@@ -2435,7 +2466,7 @@ def ppdec(x, type):
         return p0, p1
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {0: type0,
               1: type1,
@@ -2508,7 +2539,7 @@ def pprec(p0, p1, type):
         return x
 
     def errhandler():
-        print 'Invalid argument type'
+        print('Invalid argument type')
 
     switch = {0: type0,
               1: type1,
@@ -2552,7 +2583,7 @@ def ld2quin(beta):
     Ref: Phong et al., IEEE Trans. on SP, March 1995"""
 
     if beta.ndim > 1:
-        print 'The input must be an 1-D filter'
+        print('The input must be an 1-D filter')
 
     # Make sure beta is a row vector
     beta = beta.flatten(1)[:, newaxis].T
@@ -2561,7 +2592,7 @@ def ld2quin(beta):
     n = lf / 2.0
 
     if n != floor(n):
-        print 'The input allpass filter must be even length'
+        print('The input allpass filter must be even length')
 
     # beta(z1) * beta(z2)
     sp = beta.T * beta
@@ -2653,7 +2684,7 @@ def modulate2(x, type, center=array([[0, 0]])):
         return y
 
     def errhandler():
-        print 'Invalid input type'
+        print('Invalid input type')
 
     switch = {'r': do_r,
               'c': do_c,
@@ -2665,7 +2696,7 @@ def modulate2(x, type, center=array([[0, 0]])):
 def reverse2(x):
     """ REVERSE2   Reverse order of elements in 2-d signal"""
     if x.ndim < 2:
-        print 'Input must be a 2-D matrix.'
+        print('Input must be a 2-D matrix.')
     return x[::-1, ::-1]
 
 # Support fucntions to avoid visual distortion (used in DFB)
@@ -2688,7 +2719,7 @@ def backsamp(y):
     n = int(log2(len(y)))
 
     if (n != round(n)) or (n < 1):
-        print 'Input must be a cell vector of dyadic length'
+        print('Input must be a cell vector of dyadic length')
     if n == 1:
         # One level, the decomposition filterbank shoud be Q1r
         # Undo the last resampling (Q1r = R1 * D0 * R2)
@@ -2727,7 +2758,7 @@ def rebacksamp(y):
     n = int(log2(len(y)))
 
     if (n != round(n)) or (n < 1):
-        print 'Input must be a cell vector of dyadic length'
+        print('Input must be a cell vector of dyadic length')
     if n == 1:
         # One level, the reconstruction filterbank shoud be Q1r
         # Redo the first resampling (Q1r = R1 * D0 * R2)
@@ -2786,7 +2817,7 @@ def smothborder(x, n):
         W2[:, -1 - n + 1::] = w[:, n::]
         y = tile(W2, (n1, 1)) * y
     else:
-        print 'First input must be a signal or image'
+        print('First input must be a signal or image')
 
     return y
 
@@ -2813,11 +2844,11 @@ a = arange(1, 1025).reshape(32, 32)
 # print b
 # pdb.set_trace()
 y = dfbdec_l(a, 'pkva', 0)
-print y
+print(y)
 # pdb.set_trace()
 z = dfbrec_l(y, 'pkva')
-print z[31:], z.shape
-print snr(a, z)
+print(z[31:], z.shape)
+print(snr(a, z))
 # 'haar': filterHaar,
 #             'vk': filterVk,
 #             'ko': filterKo,
