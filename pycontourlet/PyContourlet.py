@@ -53,7 +53,7 @@ def lpdec(x, h, g):
 
     xlo = zeros(x.shape)
     xlo[::2, ::2] = c
-    d = x - sefilter2(xlo, g, g, 'per', adjust * array([1, 1]))
+    d = x - sefilter2(xlo, g, g, 'per', adjust * array([[1], [1]]))
 
     return c, d
 
@@ -88,7 +88,7 @@ def lprec(c, d, h, g):
     # perfect reconstruction with zero shift
     adjust = mod(size(g) + 1, 2)
 
-    xlo = sefilter2(xlo, g, g, 'per', adjust * array([1, 1]))
+    xlo = sefilter2(xlo, g, g, 'per', adjust * array([[1], [1]]))
 
     # Final combination
     x = xlo + d
@@ -111,8 +111,8 @@ def wfb2dec(x, h, g):
     %   x_LL, x_LH, x_HL, x_HH:   Four 2-D wavelet subbands"""
 
     # Make sure filter in a row vector
-    h = h.flatten(1)[:, newaxis].T
-    g = g.flatten(1)[:, newaxis].T
+    h = h.flatten()[:, newaxis].T
+    g = g.flatten()[:, newaxis].T
 
     h0 = h.copy()
     len_h0 = size(h0)
@@ -162,8 +162,8 @@ def wfb2rec(x_LL, x_LH, x_HL, x_HH, h, g):
     %   x:      reconstructed image"""
 
     # Make sure filter in a row vector
-    h = h.flatten(1)[:, newaxis].T
-    g = g.flatten(1)[:, newaxis].T
+    h = h.flatten()[:, newaxis].T
+    g = g.flatten()[:, newaxis].T
 
     g0 = g.copy()
     len_g0 = size(g0)
@@ -205,7 +205,7 @@ def wfb2rec(x_LL, x_LH, x_HL, x_HH, h, g):
 
 def rowfiltering(x, f, ext1):
     ext2 = size(f) - ext1 - 1
-    x = c_[x[:, -ext1::], x, x[:, 0:ext2]]
+    x = c_[x[:, -int(ext1)::], x, x[:, 0:int(ext2)]]
     y = signal.convolve(x, f, 'valid')
     return y
 
@@ -1501,8 +1501,8 @@ def sefilter2(x, f1, f2, extmod='per', shift=array([[0], [0]])):
    See also: EXTEND2, EFILTER2"""
 
     # Make sure filter in a row vector
-    f1 = f1.flatten(1)[:, newaxis].T
-    f2 = f2.flatten(1)[:, newaxis].T
+    f1 = f1.flatten()[:, newaxis].T
+    f2 = f2.flatten()[:, newaxis].T
 
     # Periodized extension
     lf1 = (size(f1) - 1) / 2.0
@@ -2843,10 +2843,10 @@ a = arange(1, 1025).reshape(32, 32)
 #b = qdown(y,2)
 # print b
 # pdb.set_trace()
-y = dfbdec_l(a, 'pkva', 0)
+y = dfbdec_l(a, 'haar', 0)
 print(y)
 # pdb.set_trace()
-z = dfbrec_l(y, 'pkva')
+z = dfbrec_l(y, 'haar')
 print(z[31:], z.shape)
 print(snr(a, z))
 # 'haar': filterHaar,
@@ -2873,17 +2873,17 @@ print(snr(a, z))
 #              'dmaxflat6': filterDmaxflat6,
 #              'dmaxflat7': filterDmaxflat7}
 
-#h, g = pfilters('5-3')
-# print h, h.shape
-# print g, g.shape
-# pdb.set_trace()
+#h, g = pfilters('haar')
+#print(h, h.shape)
+#print(g, g.shape)
+#pdb.set_trace()
 #k, l, m, n = wfb2dec(a, h, g)
-# print k
-# print l
-# print m
-# print n
-# print wfb2rec(k,l,m,n,h,g)
+#print(k)
+#print(l)
+#print(m)
+#print(n)
+#print(wfb2rec(k,l,m,n,h,g))
 #c, d = lpdec(a, h, g)
-# print c
-# print d
-# print lprec(c, d, h, g)
+#print(c)
+#print(d)
+#print(lprec(c, d, h, g))
