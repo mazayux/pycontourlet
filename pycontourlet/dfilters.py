@@ -340,7 +340,8 @@ def dfilters(fname, type):
         h = empty([5, 5])
         for n1 in xrange(-m, m + 1):
             for n2 in xrange(-n, n + 1):
-                h[n1 + m, n2 + n] = .5 * sinc((n1 + n2) / 2.0) * .5 * sinc((n1 - n2) / 2.0)
+                h[n1 + m, n2 + n] = .5 * \
+                    sinc((n1 + n2) / 2.0) * .5 * sinc((n1 - n2) / 2.0)
 
         c = sum(h)
         h = sqrt(2) * h / c
@@ -380,7 +381,9 @@ def dfilters(fname, type):
         k2 = M1
         h = array([.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]) * M1
         h = hstack((h, h[len(h) - 2::-1]))
-        g = array([-.125 * k1 * k2 * k3, 0.25 * k1 * k2, (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
+        g = array([-.125 * k1 * k2 * k3,
+                   0.25 * k1 * k2,
+                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
                    1 + .5 * k1 * k2]) * M2
         g = hstack((g, g[len(g) - 2::-1]))
         B = dmaxflat(4, 0)
@@ -404,8 +407,10 @@ def dfilters(fname, type):
         k2 = M1
         h = array([.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]) * M1
         h = hstack((h, h[len(h) - 2::-1]))
-        g = array([-.125 * k1 * k2 * k3, 0.25 * k1 * k2,
-                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3), 1 + .5 * k1 * k2]) * M2
+        g = array([-.125 * k1 * k2 * k3,
+                   0.25 * k1 * k2,
+                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
+                   1 + .5 * k1 * k2]) * M2
         g = hstack((g, g[len(g) - 2::-1]))
         B = dmaxflat(5, 0)
         h0 = mctrans(h, B)
@@ -427,8 +432,10 @@ def dfilters(fname, type):
         k2 = M1
         h = array([.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]) * M1
         h = hstack((h, h[len(h) - 2::-1]))
-        g = array([-.125 * k1 * k2 * k3, 0.25 * k1 * k2,
-                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3), 1 + .5 * k1 * k2]) * M2
+        g = array([-.125 * k1 * k2 * k3,
+                   0.25 * k1 * k2,
+                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
+                   1 + .5 * k1 * k2]) * M2
         g = hstack((g, g[len(g) - 2::-1]))
         B = dmaxflat(6, 0)
         h0 = mctrans(h, B)
@@ -449,8 +456,10 @@ def dfilters(fname, type):
         k2 = M1
         h = array([.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]) * M1
         h = hstack((h, h[len(h) - 2::-1]))
-        g = array([-.125 * k1 * k2 * k3, 0.25 * k1 * k2,
-                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3), 1 + .5 * k1 * k2]) * M2
+        g = array([-.125 * k1 * k2 * k3,
+                   0.25 * k1 * k2,
+                   (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
+                   1 + .5 * k1 * k2]) * M2
         g = hstack((g, g[len(g) - 2::-1]))
         B = dmaxflat(7, 0)
         h0 = mctrans(h, B)

@@ -21,6 +21,7 @@
 import numpy as np
 import math
 
+
 def computescale(subband_dfb, ratio, start, end, mode):
     """
     COMPUTESCALE   Comupute display scale for PDFB coefficients
@@ -30,7 +31,7 @@ def computescale(subband_dfb, ratio, start, end, mode):
     Input:
 
     subband_dfb:
-	A multidimentional list, one for each layer of subband images from DFB.
+        A multidimentional list, one for each layer of subband images from DFB.
     Each subband is represented as a numpy array
     ratio:
     Display ratio. It ranges from 1.2 to 10.
@@ -127,7 +128,6 @@ def computescale(subband_dfb, ratio, start, end, mode):
                 sum = sum + np.sum(subband_dfb[i])
                 count = count + subband_dfb[i].size
 
-
         if count < 2 or abs(sum) < 1e-10:
             print('Error in computescale.m! No data in this unit!')
         else:
@@ -136,7 +136,7 @@ def computescale(subband_dfb, ratio, start, end, mode):
         # Compute the STD.
         sum = 0
         for i in range(start, end):
-            if isinstance(subband_dfb[i], list): 
+            if isinstance(subband_dfb[i], list):
                 m = len(subband_dfb[i])
                 for j in range(m):
                     sum = sum + sum((subband_dfb[i][j] - mean)**2)
@@ -186,7 +186,7 @@ def computescale(subband_dfb, ratio, start, end, mode):
         # Compute the std of absolute values
         sum = 0
         for i in range(start, end):
-            if isinstance(subband_dfb[i], list): 
+            if isinstance(subband_dfb[i], list):
                 m = len(subband_dfb[i])
                 for j in range(m):
                     sum = sum + np.sum((abs(subband_dfb[i][j]) - abs_mean)**2)
@@ -200,7 +200,3 @@ def computescale(subband_dfb, ratio, start, end, mode):
         scales[1] = min(abs_mean + ratio * std, abs_max)
 
     return scales
-
-
-
-

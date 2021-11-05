@@ -50,8 +50,8 @@ def pfilters(fname):
         h = array([.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]) * M1
         h = hstack((h, h[len(h) - 2::-1]))
 
-        g = array([-.125 * k1 * k2 * k3, 0.25 * k1 * k2, -0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3,
-                   1 + .5 * k1 * k2]) * M2
+        g = array([-.125 * k1 * k2 * k3, 0.25 * k1 * k2, -0.5 * k1 -
+                  0.5 * k3 - 0.375 * k1 * k2 * k3, 1 + .5 * k1 * k2]) * M2
         g = hstack((g, g[len(g) - 2::-1]))
         # Normalize
         h = h * sqrt(2)

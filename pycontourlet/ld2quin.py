@@ -31,7 +31,7 @@ def ld2quin(beta):
     Ref: Phong et al., IEEE Trans. on SP, March 1995"""
 
     if beta.ndim > 1:
-        raise ValueError, "The input must be an 1-D filter"
+        raise ValueError("The input must be an 1-D filter")
 
     # Make sure beta is a row vector
     beta = beta[:, newaxis].reshape(len(beta),)
@@ -40,7 +40,7 @@ def ld2quin(beta):
     n = lf / 2.0
 
     if n != floor(n):
-        raise ValueError, "The input allpass filter must be even length"
+        raise ValueError("The input allpass filter must be even length")
 
     # beta(z1) * beta(z2)
     sp = beta.conj().T * beta

@@ -21,6 +21,7 @@
 from resamp import resamp
 import math
 
+
 def backsamp(y):
     """ BACKSAMP
     Backsampling the subband images of the directional filter bank
@@ -52,11 +53,11 @@ def backsamp(y):
             shift = 2 * (k + 1) - (2**(n - 2) + 1)
 
             # The first half channels
-            y[2*k] = resamp(y[2*k], 2, shift, None)
-            y[2*k+1] = resamp(y[2*k+1], 2, shift, None)
+            y[2 * k] = resamp(y[2 * k], 2, shift, None)
+            y[2 * k + 1] = resamp(y[2 * k + 1], 2, shift, None)
 
             # The second half channels
-            y[2*k+N] = resamp(y[2*k+N], 0, shift, None)
-            y[2*k+1+N] = resamp(y[2*k+1+N], 0, shift, None)
+            y[2 * k + N] = resamp(y[2 * k + N], 0, shift, None)
+            y[2 * k + 1 + N] = resamp(y[2 * k + 1 + N], 0, shift, None)
 
     return y

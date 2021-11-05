@@ -314,7 +314,11 @@ def showpdfb(y, scaleMode, displayMode, lowratio,
                         * double(abs(y[i][k]) >= dThresh)
                     else:
                         if strcmp(coefMode, 'real'):
-                            cell4Wavelets[k + 1]=double(1 + (y[i][k] - vScales[i, 0]) * dRatio)
+                            cell4Wavelets[k +
+    1]=double(1 +
+    (y[i][k] -
+    vScales[i, 0]) *
+     dRatio)
                         else:
                             cell4Wavelets{k + 1}=double(1 + (abs(y[i][k]) - vScales[i, 0]) * dRatio)
             waveletsIm=dfbimage(cell4Wavelets, subbandgap, gridI)

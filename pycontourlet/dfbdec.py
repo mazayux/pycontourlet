@@ -25,6 +25,7 @@ from backsamp import backsamp
 from fbdec import fbdec
 from dfbrec import fbdec
 
+
 def dfbdec(x, fname, n):
     """ DFBDEC   Directional Filterbank Decomposition
 
@@ -44,7 +45,8 @@ def dfbdec(x, fname, n):
     See also: DFBREC, FBDEC, DFILTERS"""
 
     if (n != round(n)) or (n < 0):
-        raise ValueError('Number of decomposition levels must be a non-negative integer')
+        raise ValueError(
+            'Number of decomposition levels must be a non-negative integer')
 
     if n == 0:
         # No decomposition, simply copy input to output
@@ -86,12 +88,12 @@ def dfbdec(x, fname, n):
             y = [[None]] * 2**l
 
             # The first half channels use R1 and R2
-            for k in range(0, 2**(l-2)):
+            for k in range(0, 2**(l - 2)):
                 i = k % 2
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
-            for k in range(2**(l-2), 2**(l-1)):
+            for k in range(2**(l - 2), 2**(l - 1)):
                 i = k % 2 + 2
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')

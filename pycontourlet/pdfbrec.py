@@ -22,7 +22,7 @@ from numpy import *
 
 
 def pdfbrec(y, pfilt, dfilt)
-    """% PDFBREC   Pyramid Directional Filterbank Reconstruction
+ """% PDFBREC   Pyramid Directional Filterbank Reconstruction
     %
     %	x = pdfbrec(y, pfilt, dfilt)
     %
@@ -37,8 +37,8 @@ def pdfbrec(y, pfilt, dfilt)
     %
     % See also: PFILTERS, DFILTERS, PDFBDEC"""
 
-    n = len(y) - 1
-    if n <= 0:
+  n = len(y) - 1
+   if n <= 0:
         x = y[0]
     else:
         'Recursive call to reconstruct the low band

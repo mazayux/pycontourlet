@@ -27,7 +27,7 @@ def dmaxflat(N, d):
     being 1 or 0 depending on use
     """
     if (N > 7 or N < 1):
-        raise ValueError, "N must be in {1,2,3,4,5,6,7}"
+        raise ValueError("N must be in {1,2,3,4,5,6,7}")
 
     if equal(N, 1):
         h = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0
