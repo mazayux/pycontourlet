@@ -18,15 +18,16 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from numpy import *
+import numpy as np
+import cython
+import math
 from scipy import signal
 from scipy.fftpack import fftshift
 import pdb
-import cython
+
 
 
 # Laplacian Pyramid
-
 
 def lpdec(x, h, g):
     """ LPDEC   Laplacian Pyramid Decomposition
@@ -49,11 +50,11 @@ def lpdec(x, h, g):
 
     # Compute the residual (bandpass) image by upsample, filter, and subtract
     # Even size filter needs to be adjusted to obtain perfect reconstruction
-    adjust = mod(size(g) + 1, 2)
+    adjust = np.mod(np.size(g) + 1, 2)
 
-    xlo = zeros(x.shape)
+    xlo = np.zeros(x.shape)
     xlo[::2, ::2] = c
-    d = x - sefilter2(xlo, g, g, 'per', adjust * array([[1], [1]]))
+    d = x - sefilter2(xlo, g, g, 'per', adjust * np.array([[1], [1]]))
 
     return c, d
 
@@ -82,13 +83,13 @@ def lprec(c, d, h, g):
 
     # Subtract from the coarse image, and then upsample and filter
     xlo = c - xhi
-    xlo = dup(xlo, array([2, 2]))
+    xlo = dup(xlo, np.array([2, 2]))
 
     # Even size filter needs to be adjusted to obtain
     # perfect reconstruction with zero shift
-    adjust = mod(size(g) + 1, 2)
+    adjust = np.mod(np.size(g) + 1, 2)
 
-    xlo = sefilter2(xlo, g, g, 'per', adjust * array([[1], [1]]))
+    xlo = sefilter2(xlo, g, g, 'per', adjust * np.array([[1], [1]]))
 
     # Final combination
     x = xlo + d
@@ -111,19 +112,19 @@ def wfb2dec(x, h, g):
     %   x_LL, x_LH, x_HL, x_HH:   Four 2-D wavelet subbands"""
 
     # Make sure filter in a row vector
-    h = h.flatten()[:, newaxis].T
-    g = g.flatten()[:, newaxis].T
+    h = h.flatten('F')[:, np.newaxis].T
+    g = g.flatten('F')[:, np.newaxis].T
 
     h0 = h.copy()
-    len_h0 = size(h0)
-    ext_h0 = floor(len_h0 / 2.0)
+    len_h0 = np.size(h0)
+    ext_h0 = np.floor(len_h0 / 2.0)
     # Highpass analysis filter: H1(z) = -z^(-1) G0(-z)
-    len_h1 = size(g)
-    c = floor((len_h1 + 1.0) / 2.0)
+    len_h1 = np.size(g)
+    c = np.floor((len_h1 + 1.0) / 2.0)
     # Shift the center of the filter by 1 if its length is even.
-    if mod(len_h1, 2) == 0:
+    if np.mod(len_h1, 2) == 0:
         c = c + 1
-    h1 = - g * (-1)**(arange(1, len_h1 + 1) - c)
+    h1 = - g * (-1)**(np.arange(1, len_h1 + 1) - c)
     ext_h1 = len_h1 - c + 1
 
     # Row-wise filtering
@@ -162,22 +163,22 @@ def wfb2rec(x_LL, x_LH, x_HL, x_HH, h, g):
     %   x:      reconstructed image"""
 
     # Make sure filter in a row vector
-    h = h.flatten()[:, newaxis].T
-    g = g.flatten()[:, newaxis].T
+    h = h.flatten('F')[:, np.newaxis].T
+    g = g.flatten('F')[:, np.newaxis].T
 
     g0 = g.copy()
-    len_g0 = size(g0)
-    ext_g0 = floor((len_g0 - 1) / 2)
+    len_g0 = np.size(g0)
+    ext_g0 = np.floor((len_g0 - 1) / 2)
 
     # Highpass synthesis filter: G1(z) = -z H0(-z)
-    len_g1 = size(h)
-    c = floor((len_g1 + 1) / 2)
-    g1 = (-1) * h * (-1) ** (arange(1, len_g1 + 1) - c)
+    len_g1 = np.size(h)
+    c = np.floor((len_g1 + 1) / 2)
+    g1 = (-1) * h * (-1) ** (np.arange(1, len_g1 + 1) - c)
     ext_g1 = len_g1 - (c + 1)
 
     # Get the output image size
     height, width = x_LL.shape
-    x_B = zeros((height * 2, width))
+    x_B = np.zeros((height * 2, width))
     x_B[::2, :] = x_LL
 
     # Column-wise filtering
@@ -191,7 +192,7 @@ def wfb2rec(x_LL, x_LH, x_HL, x_HH, h, g):
     x_H = x_H + rowfiltering(x_B.T, g1, ext_g1).T
 
     # Row-wise filtering
-    x_B = zeros((2 * height, 2 * width))
+    x_B = np.zeros((2 * height, 2 * width))
     x_B[:, ::2] = x_L
     x = rowfiltering(x_B, g0, ext_g0)
     x_B[:, ::2] = x_H
@@ -204,8 +205,8 @@ def wfb2rec(x_LL, x_LH, x_HL, x_HH, h, g):
 
 
 def rowfiltering(x, f, ext1):
-    ext2 = size(f) - ext1 - 1
-    x = c_[x[:, -int(ext1)::], x, x[:, 0:int(ext2)]]
+    ext2 = np.size(f) - ext1 - 1
+    x = np.c_[x[:, -int(ext1)::], x, x[:, 0:int(ext2)]]
     y = signal.convolve(x, f, 'valid')
     return y
 
@@ -269,12 +270,12 @@ def dfbdec(x, fname, n):
             y = [[None]] * 2**l
             # The first half channels use R1 and R2
             for k in xrange(0, 2**(l - 2)):
-                i = mod(k, 2)
+                i = np.mod(k, 2)
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
             for k in xrange(2**(l - 2), 2**(l - 1)):
-                i = mod(k, 2) + 2
+                i = np.mod(k, 2) + 2
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
     # Back sampling (so that the overal sampling is separable)
@@ -343,12 +344,12 @@ def dfbrec(y, fname):
 
             # The first half channels use R1 and R2
             for k in xrange(0, 2**(l - 2)):
-                i = mod(k, 2)
+                i = np.mod(k, 2)
                 y[k] = fbrec(y_old[2 * k], y_old[2 * k + 1],
                              f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
             for k in xrange(2**(l - 2), 2**(l - 1)):
-                i = mod(k, 2) + 2
+                i = np.mod(k, 2) + 2
                 y[k] = fbrec(y_old[2 * k], y_old[2 * k + 1],
                              f0[i], f1[i], 'pq', i, 'per')
 
@@ -412,13 +413,13 @@ def dfbdec_l(x, f, n):
 
             # The first half channels use R1 and R2
             for k in xrange(0, 2**(l - 2)):
-                i = mod(k, 2)
+                i = np.mod(k, 2)
                 y[2 * k + 1], y[2 *
                                 k] = fbdec_l(y_old[k], f.copy(), 'p', i, 'per')
 
                 # The second half channels use R3 and R4
             for k in xrange(2**(l - 2), 2**(l - 1)):
-                i = mod(k, 2) + 2
+                i = np.mod(k, 2) + 2
                 y[2 * k + 1], y[2 *
                                 k] = fbdec_l(y_old[k], f.copy(), 'p', i, 'per')
 
@@ -445,7 +446,7 @@ def dfbrec_l(y, f):
 
     See also:   DFBDEC, FBREC, DFILTERS"""
 
-    n = int(log2(len(y)))
+    n = int(np.log2(len(y)))
 
     if (n != round(n)) or (n < 0):
         print('Number of reconstruction levels must be a non-negative integer')
@@ -477,12 +478,12 @@ def dfbrec_l(y, f):
 
             # The first half channels use R0 and R1
             for k in xrange(0, 2**(l - 2)):
-                i = mod(k, 2)
+                i = np.mod(k, 2)
                 y[k] = fbrec_l(y_old[2 * k + 1], y_old[2 * k],
                                f.copy(), 'p', i, 'per')
             # The second half channels use R2 and R3
             for k in xrange(2**(l - 2), 2**(l - 1)):
-                i = mod(k, 2) + 2
+                i = np.mod(k, 2) + 2
                 y[k] = fbrec_l(y_old[2 * k + 1], y_old[2 * k],
                                f.copy(), 'p', i, 'per')
         # Second level
@@ -529,19 +530,19 @@ def fbdec(x, h0, h1, type1, type2, extmod='per'):
         x = resamp(x, type2)
 
     # Stagger sampling if filter is odd-size (in both dimensions)
-    if all(mod(h1.shape, 2)):
-        shift = array([[-1], [0]])
+    if all(np.mod(h1.shape, 2)):
+        shift = np.array([[-1], [0]])
 
         # Account for the resampling matrix in the parallegoram case
         if type1 == 'p':
             R = [[None]] * 4
-            R[0] = array([[1, 1], [0, 1]])
-            R[1] = array([[1, -1], [0, 1]])
-            R[2] = array([[1, 0], [1, 1]])
-            R[3] = array([[1, 0], [-1, 1]])
+            R[0] = np.array([[1, 1], [0, 1]])
+            R[1] = np.array([[1, -1], [0, 1]])
+            R[2] = np.array([[1, 0], [1, 1]])
+            R[3] = np.array([[1, 0], [-1, 1]])
             shift = R[type2] * shift
     else:
-        shift = array([[0], [0]])
+        shift = np.array([[0], [0]])
     # Extend, filter and keep the original size
     y0 = efilter2(x, h0, extmod)
     y1 = efilter2(x, h1, extmod, shift)
@@ -608,23 +609,23 @@ def fbrec(y0, y1, h0, h1, type1, type2, extmod='per'):
         print('Invalid input type1')
 
     # Stagger sampling if filter is odd-size
-    if all(mod(h1.shape, 2)):
-        shift = array([[1], [0]])
+    if all(np.mod(h1.shape, 2)):
+        shift = np.array([[1], [0]])
         # Account for the resampling matrix in the parallegoram case
         if type1 == 'p':
             R = [[None]] * 4
-            R[0] = array([[1, 1], [0, 1]])
-            R[1] = array([[1, -1], [0, 1]])
-            R[2] = array([[1, 0], [1, 1]])
-            R[3] = array([[1, 0], [-1, 1]])
+            R[0] = np.array([[1, 1], [0, 1]])
+            R[1] = np.array([[1, -1], [0, 1]])
+            R[2] = np.array([[1, 0], [1, 1]])
+            R[3] = np.array([[1, 0], [-1, 1]])
             shift = R[type2] * shift
     else:
-        shift = array([[0], [0]])
+        shift = np.array([[0], [0]])
 
     # Dimension that has even size filter needs to be adjusted to obtain
     # perfect reconstruction with zero shift
-    adjust0 = mod(array([h0.shape]) + 1, 2).T
-    adjust1 = mod(array([h1.shape]) + 1, 2).T
+    adjust0 = np.mod(np.array([h0.shape]) + 1, 2).T
+    adjust1 = np.mod(np.array([h1.shape]) + 1, 2).T
 
     # Extend, filter and keep the original size
     x0 = efilter2(y0, h0, extmod, adjust0)
@@ -684,7 +685,7 @@ def fbdec_l(x, f, type1, type2, extmod='per'):
         print('Invalid argument type1')
 
     # Ladder network structure
-    y0 = (1 / sqrt(2)) * (p0 - sefilter2(p1, f, f, extmod, array([[1], [1]])))
+    y0 = (1 / sqrt(2)) * (p0 - sefilter2(p1, f, f, extmod, np.array([[1], [1]])))
     y1 = (-sqrt(2) * p1) - sefilter2(y0, f, f, extmod)
 
     return y0, y1
@@ -720,7 +721,7 @@ def fbrec_l(y0, y1, f, type1, type2, extmod='per'):
     f[:, ::2] = -f[:, ::2]
     # Ladder network structure
     p1 = (-1 / sqrt(2)) * (y1 + sefilter2(y0, f, f, extmod))
-    p0 = sqrt(2) * y0 + sefilter2(p1, f, f, extmod, array([[1], [1]]))
+    p0 = sqrt(2) * y0 + sefilter2(p1, f, f, extmod, np.array([[1], [1]]))
 
     # Polyphase reconstruction
     if str.lower(type1[0]) == 'q':
@@ -748,12 +749,12 @@ def pfilters(fname):
     for separable pyramid"""
 
     def filter97():
-        h = array([[.037828455506995, -.023849465019380, -.11062440441842,
+        h = np.array([[.037828455506995, -.023849465019380, -.11062440441842,
                    .37740285561265]])
-        h = c_[h, .85269867900940, h[:, ::-1]]
+        h = np.c_[h, .85269867900940, h[:, ::-1]]
 
-        g = array([[-.064538882628938, -.040689417609558, .41809227322221]])
-        g = c_[g, .78848561640566, g[:, ::-1]]
+        g = np.array([[-.064538882628938, -.040689417609558, .41809227322221]])
+        g = np.c_[g, .78848561640566, g[:, ::-1]]
 
         return h, g
 
@@ -763,12 +764,12 @@ def pfilters(fname):
         k1 = 1 - sqrt(2)
         k2 = M1
         k3 = k1
-        h = array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
-        h = c_[h, h[:, size(h) - 2::-1]]
+        h = np.array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
+        h = np.c_[h, h[:, np.size(h) - 2::-1]]
 
-        g = array([[-.125 * k1 * k2 * k3, 0.25 * k1 * k2, -0.5 * k1 -
+        g = np.array([[-.125 * k1 * k2 * k3, 0.25 * k1 * k2, -0.5 * k1 -
                   0.5 * k3 - 0.375 * k1 * k2 * k3, 1 + .5 * k1 * k2]]) * M2
-        g = c_[g, g[:, size(g) - 2::-1]]
+        g = np.c_[g, g[:, np.size(g) - 2::-1]]
         # Normalize
         h = h * sqrt(2)
         g = g * sqrt(2)
@@ -776,16 +777,16 @@ def pfilters(fname):
         return h, g
 
     def filter53():
-        h = array([[-1., 2., 6., 2., -1.]]) / (4 * sqrt(2))
-        g = array([[1., 2., 1.]]) / (2 * sqrt(2))
+        h = np.array([[-1., 2., 6., 2., -1.]]) / (4 * sqrt(2))
+        g = np.array([[1., 2., 1.]]) / (2 * sqrt(2))
 
         return h, g
 
     def filterBurt():
-        h = array([[0.6, 0.25, -0.05]])
-        h = sqrt(2) * c_[h[:, :0:-1], h]
-        g = array([[17.0 / 28, 73.0 / 280, -3.0 / 56, -3.0 / 280]])
-        g = sqrt(2) * c_[g[:, :0:-1], g]
+        h = np.array([[0.6, 0.25, -0.05]])
+        h = sqrt(2) * np.c_[h[:, :0:-1], h]
+        g = np.array([[17.0 / 28, 73.0 / 280, -3.0 / 56, -3.0 / 280]])
+        g = sqrt(2) * np.c_[g[:, :0:-1], g]
 
         return h, g
 
@@ -794,15 +795,15 @@ def pfilters(fname):
         # Allpass filter for the ladder structure network
         beta = ldfilter(fname)
 
-        lf = size(beta)
+        lf = np.size(beta)
 
         n = lf / 2.0
 
-        if n != floor(n):
+        if n != np.floor(n):
             print('The input allpass filter must be even length')
 
         # beta(z^2)
-        beta2 = zeros((1, 2 * lf - 1))
+        beta2 = np.zeros((1, 2 * lf - 1))
         beta2[:, ::2] = beta
 
         # H(z)
@@ -869,23 +870,23 @@ def dfilters(fname, type):
     # The diamond-shaped filter pair
     def filterHaar():
         if str.lower(type[0]) == 'd':
-            h0 = array([[1, 1]]) / sqrt(2)
-            h1 = array([[-1, 1]]) / sqrt(2)
+            h0 = np.array([[1, 1]]) / sqrt(2)
+            h1 = np.array([[-1, 1]]) / sqrt(2)
         else:
-            h0 = array([[1, 1]]) / sqrt(2)
-            h1 = array([[1, -1]]) / sqrt(2)
+            h0 = np.array([[1, 1]]) / sqrt(2)
+            h1 = np.array([[1, -1]]) / sqrt(2)
         return h0, h1
 
     def filterVk():
         if str.lower(type[0]) == 'd':
-            h0 = array([[1, 2, 1]]) / 4.0
-            h1 = array([[-1, -2, 6, -2, -1]]) / 4.0
+            h0 = np.array([[1, 2, 1]]) / 4.0
+            h1 = np.array([[-1, -2, 6, -2, -1]]) / 4.0
         else:
-            h0 = array([[-1, 2, 6, 2, -1]]) / 4.0
-            h1 = array([[-1, 2, -1]]) / 4.0
+            h0 = np.array([[-1, 2, 6, 2, -1]]) / 4.0
+            h1 = np.array([[-1, 2, -1]]) / 4.0
 
         # McClellan transfrom to obtain 2D diamond filters
-        t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0  # diamond kernel
+        t = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0  # diamond kernel
         h0 = mctrans(h0, t)
         h1 = mctrans(h1, t)
 
@@ -894,12 +895,12 @@ def dfilters(fname, type):
     def filterKo():  # orthogonal filters in Kovacevic's thesis
         a0, a1, a2 = 2, 0.5, 1
 
-        h0 = array([[0, -a1, -a0 * a1, 0],
+        h0 = np.array([[0, -a1, -a0 * a1, 0],
                     [-a2, -a0 * a2, -a0, 1],
                     [0, a0 * a1 * a2, -a1 * a2, 0]])
 
         # h1 = qmf2(h0);
-        h1 = array([[0, -a1 * a2, -a0 * a1 * a2, 0],
+        h1 = np.array([[0, -a1 * a2, -a0 * a1 * a2, 0],
                     [1, a0, -a0 * a2, a2],
                     [0, -a0 * a1, a1, 0]])
 
@@ -919,13 +920,13 @@ def dfilters(fname, type):
     def filterKos():  # Smooth orthogonal filters in Kovacevic's thesis
         a0, a1, a2 = -sqrt(3), -sqrt(3), 2 + sqrt(3)
 
-        h0 = array([[0, -a1, -a0 * a1, 0],
+        h0 = np.array([[0, -a1, -a0 * a1, 0],
                     [-a2, -a0 * a2, -a0, 1],
                     [0, a0 * a1 * a2, -a1 * a2, 0]])
 
         # h1 = qmf2(h0);
 
-        h1 = array([[0, -a1 * a2, -a0 * a1 * a2, 0],
+        h1 = np.array([[0, -a1 * a2, -a0 * a1 * a2, 0],
                     [1, a0, -a0 * a2, a2],
                     [0, -a0 * a1, a1, 0]])
 
@@ -944,7 +945,7 @@ def dfilters(fname, type):
         return h0, h1
 
     def filterLax():    # by Lu, Antoniou and Xu
-        h = array([[-1.2972901e-5, 1.2316237e-4, -7.5212207e-5, 6.3686104e-5,
+        h = np.array([[-1.2972901e-5, 1.2316237e-4, -7.5212207e-5, 6.3686104e-5,
                     9.4800610e-5, -7.5862919e-5, 2.9586164e-4, -1.8430337e-4],
                    [1.2355540e-4, -1.2780882e-4, -1.9663685e-5, -4.5956538e-5,
                     -6.5195193e-4, -2.4722942e-4, -2.1538331e-5, -7.0882131e-4],
@@ -969,7 +970,7 @@ def dfilters(fname, type):
         return h0, h1
 
     def filterSk():  # by Shah and Kalker
-        h = array([[0.621729, 0.161889, -0.0126949, -0.00542504, 0.00124838],
+        h = np.array([[0.621729, 0.161889, -0.0126949, -0.00542504, 0.00124838],
                   [0.161889, -0.0353769, -0.0162751, -0.00499353, 0],
                   [-0.0126949, -0.0162751, 0.00749029, 0, 0],
                   [-0.00542504, 0.00499353, 0, 0, 0],
@@ -987,10 +988,10 @@ def dfilters(fname, type):
         q = sqrt(2)
         b = 0.02
         b1 = b * b
-        h = array([[b / q, 0, -2 * q * b, 0, 3 * q * b, 0, -2 * q * b, 0, b / q],
+        h = np.array([[b / q, 0, -2 * q * b, 0, 3 * q * b, 0, -2 * q * b, 0, b / q],
                    [0, -1 / (16 * q), 0, 9 / (16 * q), 1 / q, 9 / (16 * q), 0, -1 / (16 * q), 0],
                    [b / q, 0, -2 * q * b, 0, 3 * q * b, 0, -2 * q * b, 0, b / q]])
-        g0 = array([[-b1 / q, 0, 4 * b1 * q, 0, -14 * q * b1, 0, 28 * q * b1, 0, -35 * q * b1, 0,
+        g0 = np.array([[-b1 / q, 0, 4 * b1 * q, 0, -14 * q * b1, 0, 28 * q * b1, 0, -35 * q * b1, 0,
                      28 * q * b1, 0, -14 * q * b1, 0, 4 * b1 * q, 0, -b1 / q],
                     [0, b / (8 * q), 0, -13 * b / (8 * q), b / q, 33 * b / (8 * q), -2 * q * b,
                      -21 * b / (8 * q), 3 * q * b, -21 * b / (8 * q), -2 * q * b, 33 * b / (8 * q),
@@ -1016,11 +1017,11 @@ def dfilters(fname, type):
     def filter79():  # by Cohen and Daubechies
         # 1D prototype filters: the '7-9' pair
 
-        h0 = array([[0.026748757411, -0.016864118443, -0.078223266529,
+        h0 = np.array([[0.026748757411, -0.016864118443, -0.078223266529,
                      0.266864118443, 0.602949018236, 0.266864118443,
                      -0.078223266529, -0.016864118443, 0.026748757411]])
 
-        g0 = array([[-0.045635881557, -0.028771763114, 0.295635881557,
+        g0 = np.array([[-0.045635881557, -0.028771763114, 0.295635881557,
                     0.557543526229, 0.295635881557, -0.028771763114,
                     -0.045635881557]])
 
@@ -1031,7 +1032,7 @@ def dfilters(fname, type):
             h0 = g0.copy()
 
         # Use McClellan to obtain 2D filters
-        t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0  # diamond kernel
+        t = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0  # diamond kernel
         h0 = sqrt(2) * mctrans(h0, t)
         h1 = sqrt(2) * mctrans(h1, t)
 
@@ -1128,18 +1129,18 @@ def dfilters(fname, type):
         # Ideal low and high pass filters
         flength = 30
 
-        h0 = array([signal.filter_design.firwin(flength + 1, 0.5)])
+        h0 = np.array([signal.filter_design.firwin(flength + 1, 0.5)])
         h1 = modulate2(h0, 'c')
 
         # Use McClellan to obtain 2D filters
-        t = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0  # diamond kernel
+        t = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0  # diamond kernel
         h0 = sqrt(2) * mctrans(h0, t)
         h1 = sqrt(2) * mctrans(h1, t)
 
         return h0, h1
 
     def filterOqf():    # Some "home-made" filters!
-        h0 = sqrt(2) / 64 * array([[sqrt(15), -3, 0],
+        h0 = sqrt(2) / 64 * np.array([[sqrt(15), -3, 0],
                                    [0, 5, -sqrt(15)],
                                    [-2 * sqrt(15), 30, 0],
                                    [0, 30, 2 * sqrt(15)],
@@ -1156,14 +1157,14 @@ def dfilters(fname, type):
         return h0, h1
 
     def filterTest():      # Only for the shape, not for PR
-        h0 = array([[0, 1, 0], [1, 4, 1], [0, 1, 0]])
-        h1 = array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]])
+        h0 = np.array([[0, 1, 0], [1, 4, 1], [0, 1, 0]])
+        h1 = np.array([[0, -1, 0], [-1, 4, -1], [0, -1, 0]])
 
         return h0, h1
 
     def filterTestDVM():  # Only for directional vanishing moment
-        h0 = array([[1, 1], [1, 1]]) / sqrt(2)
-        h1 = array([[-1, 1], [1, -1]]) / sqrt(2)
+        h0 = np.array([[1, 1], [1, 1]]) / sqrt(2)
+        h1 = np.array([[-1, 1], [1, -1]]) / sqrt(2)
 
         return h0, h1
 
@@ -1196,7 +1197,7 @@ def dfilters(fname, type):
         # ideal response
         # window
 
-        h = array([[-.001104, .002494, -0.001744, 0.004895,
+        h = np.array([[-.001104, .002494, -0.001744, 0.004895,
                   -0.000048, -.000311],
                    [0.008918, -0.002844, -0.025197, -0.017135,
                   0.003905, -0.000081],
@@ -1222,13 +1223,13 @@ def dfilters(fname, type):
         k1 = 1 - sqrt(2)
         k3 = k1
         k2 = M1
-        h = array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
-        h = c_[h, h[:, size(h) - 2::-1]]
-        g = array([[-.125 * k1 * k2 * k3,
+        h = np.array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
+        h = np.c_[h, h[:, np.size(h) - 2::-1]]
+        g = np.array([[-.125 * k1 * k2 * k3,
                     0.25 * k1 * k2,
                     (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
                     1 + .5 * k1 * k2]]) * M2
-        g = c_[g, g[:, size(g) - 2::-1]]
+        g = np.c_[g, g[:, np.size(g) - 2::-1]]
         B = dmaxflat(4, 0)
         h0 = mctrans(h, B)
         g0 = mctrans(g, B)
@@ -1249,13 +1250,13 @@ def dfilters(fname, type):
         k1 = 1 - sqrt(2)
         k3 = k1
         k2 = M1
-        h = array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
-        h = c_[h, h[:, size(h) - 2::-1]]
-        g = array([[-.125 * k1 * k2 * k3,
+        h = np.array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
+        h = np.c_[h, h[:, np.size(h) - 2::-1]]
+        g = np.array([[-.125 * k1 * k2 * k3,
                     0.25 * k1 * k2,
                     (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
                     1 + .5 * k1 * k2]]) * M2
-        g = c_[g, g[:, size(g) - 2::-1]]
+        g = np.c_[g, g[:, np.size(g) - 2::-1]]
         B = dmaxflat(5, 0)
         h0 = mctrans(h, B)
         g0 = mctrans(g, B)
@@ -1274,13 +1275,13 @@ def dfilters(fname, type):
         k1 = 1 - sqrt(2)
         k3 = k1
         k2 = M1
-        h = array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
-        h = c_[h, h[:, size(h) - 2::-1]]
-        g = array([[-.125 * k1 * k2 * k3,
+        h = np.array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
+        h = np.c_[h, h[:, np.size(h) - 2::-1]]
+        g = np.array([[-.125 * k1 * k2 * k3,
                     0.25 * k1 * k2,
                     (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
                     1 + .5 * k1 * k2]]) * M2
-        g = c_[g, g[:, size(g) - 2::-1]]
+        g = np.c_[g, g[:, np.size(g) - 2::-1]]
         B = dmaxflat(6, 0)
         h0 = mctrans(h, B)
         g0 = mctrans(g, B)
@@ -1301,13 +1302,13 @@ def dfilters(fname, type):
         k1 = 1 - sqrt(2)
         k3 = k1
         k2 = M1
-        h = array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
-        h = c_[h, h[:, size(h) - 2::-1]]
-        g = array([[-.125 * k1 * k2 * k3,
+        h = np.array([[.25 * k2 * k3, .5 * k2, 1 + .5 * k2 * k3]]) * M1
+        h = np.c_[h, h[:, np.size(h) - 2::-1]]
+        g = np.array([[-.125 * k1 * k2 * k3,
                     0.25 * k1 * k2,
                     (-0.5 * k1 - 0.5 * k3 - 0.375 * k1 * k2 * k3),
                     1 + .5 * k1 * k2]]) * M2
-        g = c_[g, g[:, size(g) - 2::-1]]
+        g = np.c_[g, g[:, np.size(g) - 2::-1]]
         B = dmaxflat(7, 0)
         h0 = mctrans(h, B)
         g0 = mctrans(g, B)
@@ -1360,15 +1361,15 @@ def ldfilter(fname):
     'pkvaN': length N filter from Phoong, Kim, Vaidyanathan and Ansari"""
 
     def pkva12():
-        v = array([[0.6300, -0.1930, 0.0972, -0.0526, 0.0272, -0.0144]])
+        v = np.array([[0.6300, -0.1930, 0.0972, -0.0526, 0.0272, -0.0144]])
         return v
 
     def pkva8():
-        v = array([[0.6302, -0.1924, 0.0930, -0.0403]])
+        v = np.array([[0.6302, -0.1924, 0.0930, -0.0403]])
         return v
 
     def pkva6():
-        v = array([[0.6261, -0.1794, 0.0688]])
+        v = np.array([[0.6261, -0.1794, 0.0688]])
         return v
 
     def errhandler():
@@ -1379,7 +1380,7 @@ def ldfilter(fname):
               'pkva6': pkva6}
     v = switch.get(fname, errhandler)()
     # Symmetric impulse response
-    f = c_[v[:, ::-1], v]
+    f = np.c_[v[:, ::-1], v]
     return f
 
 
@@ -1392,65 +1393,65 @@ def dmaxflat(N, d):
         print('N must be in {1,2,3,4,5,6,7}')
 
     def dmaxflat1():
-        h = array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0
+        h = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]) / 4.0
         h[2, 2] = d
         return h
 
     def dmaxflat2():
-        h = array([[0, -1, 0], [-1, 0, 10], [0, 10, 0]])
-        h = c_[h, fliplr(h[:, :-1])]
-        h = r_[h, flipud(h[:-1, :])] / 32.0
+        h = np.array([[0, -1, 0], [-1, 0, 10], [0, 10, 0]])
+        h = np.c_[h, fliplr(h[:, :-1])]
+        h = np.r_[h, flipud(h[:-1, :])] / 32.0
         h[3, 3] = d
         return h
 
     def dmaxflat3():
-        h = array([[0, 3, 0, 2],
+        h = np.array([[0, 3, 0, 2],
                    [3, 0, -27, 0],
                    [0, -27, 0, 174],
                    [2, 0, 174, 0]])
-        h = c_[h, fliplr(h[:, :-1])]
-        h = r_[h, flipud(h[:-1, :])] / 512.0
+        h = np.c_[h, fliplr(h[:, :-1])]
+        h = np.r_[h, flipud(h[:-1, :])] / 512.0
         h[4, 4] = d
         return h
 
     def dmaxflat4():
-        h = array([[0, -5, 0, -3, 0],
+        h = np.array([[0, -5, 0, -3, 0],
                    [-5, 0, 52, 0, 34],
                    [0, 52, 0, -276, 0],
                    [-3, 0, -276, 0, 1454],
                    [0, 34, 0, 1454, 0]]) / 2.0**12
-        h = c_[h, fliplr(h[:, :-1])]
-        h = r_[h, flipud(h[:-1, :])]
+        h = np.c_[h, fliplr(h[:, :-1])]
+        h = np.r_[h, flipud(h[:-1, :])]
         h[5, 5] = d
         return h
 
     def dmaxflat5():
-        h = array([[0, 35, 0, 20, 0, 18],
+        h = np.array([[0, 35, 0, 20, 0, 18],
                    [35, 0, -425, 0, -250, 0],
                    [0, -425, 0, 2500, 0, 1610],
                    [20, 0, 2500, 0, -10200, 0],
                    [0, -250, 0, -10200, 0, 47780],
                    [18, 0, 1610, 0, 47780, 0]]) / 2.0**17
-        h = c_[h, fliplr(h[:, :-1])]
-        h = r_[h, flipud(h[:-1, :])]
+        h = np.c_[h, fliplr(h[:, :-1])]
+        h = np.r_[h, flipud(h[:-1, :])]
         h[6, 6] = d
         return h
 
     def dmaxflat6():
-        h = array([[0, -63, 0, -35, 0, -30, 0],
+        h = np.array([[0, -63, 0, -35, 0, -30, 0],
                    [-63, 0, 882, 0, 495, 0, 444],
                    [0, 882, 0, -5910, 0, -3420, 0],
                    [-35, 0, -5910, 0, 25875, 0, 16460],
                    [0, 495, 0, 25875, 0, -89730, 0],
                    [-30, 0, -3420, 0, -89730, 0, 389112],
                    [0, 44, 0, 16460, 0, 389112, 0]]) / 2.0**20
-        h = c_[h, fliplr(h[:, :-1])]
-        h = r_[h, flipud(h[:-1, :])]
+        h = np.c_[h, fliplr(h[:, :-1])]
+        h = np.r_[h, flipud(h[:-1, :])]
         h[7, 7] = d
         return h
 
     def dmaxflat7():
-        h = array([[0, 231, 0, 126, 0, 105, 0, 100],
+        h = np.array([[0, 231, 0, 126, 0, 105, 0, 100],
                    [231, 0, -3675, 0, -2009, 0, -1715, 0],
                    [0, -3675, 0, 27930, 0, 15435, 0, 13804],
                    [126, 0, 27930, 0, -136514, 0, -77910, 0],
@@ -1458,8 +1459,8 @@ def dmaxflat(N, d):
                    [105, 0, 15435, 0, 495145, 0, -1535709, 0],
                    [0, -1715, 0, -77910, 0, -1535709, 0, 6305740],
                    [100, 0, 13804, 0, 311780, 0, 6305740, 0]]) / 2.0**24
-        h = c_[h, fliplr(h[:, :-1])]
-        h = r_[h, flipud(h[:-1, :])]
+        h = np.c_[h, fliplr(h[:, :-1])]
+        h = np.r_[h, flipud(h[:-1, :])]
         h[8, 8] = d
         return h
 
@@ -1478,7 +1479,7 @@ def dmaxflat(N, d):
 # Multidimensional filtering (used in building block filter banks)
 
 
-def sefilter2(x, f1, f2, extmod='per', shift=array([[0], [0]])):
+def sefilter2(x, f1, f2, extmod='per', shift=np.array([[0], [0]])):
     """SEFILTER2   2D seperable filtering with extension handling
     y = sefilter2(x, f1, f2, [extmod], [shift])
 
@@ -1501,15 +1502,15 @@ def sefilter2(x, f1, f2, extmod='per', shift=array([[0], [0]])):
    See also: EXTEND2, EFILTER2"""
 
     # Make sure filter in a row vector
-    f1 = f1.flatten()[:, newaxis].T
-    f2 = f2.flatten()[:, newaxis].T
+    f1 = f1.flatten('F')[:, np.newaxis].T
+    f2 = f2.flatten('F')[:, np.newaxis].T
 
     # Periodized extension
-    lf1 = (size(f1) - 1) / 2.0
-    lf2 = (size(f1) - 1) / 2.0
+    lf1 = (np.size(f1) - 1) / 2.0
+    lf2 = (np.size(f1) - 1) / 2.0
 
-    y = extend2(x, floor(lf1) + shift[0, 0], ceil(lf1) - shift[0, 0],
-                floor(lf2) + shift[1, 0], ceil(lf2) - shift[1, 0], extmod)
+    y = extend2(x, np.floor(lf1) + shift[0, 0], np.ceil(lf1) - shift[0, 0],
+                np.floor(lf2) + shift[1, 0], np.ceil(lf2) - shift[1, 0], extmod)
     # pdb.set_trace()
     # Seperable filter
     y = signal.convolve(y, f1, 'valid')
@@ -1517,7 +1518,7 @@ def sefilter2(x, f1, f2, extmod='per', shift=array([[0], [0]])):
     return y
 
 
-def efilter2(x, f, extmod='per', shift=array([[0], [0]])):
+def efilter2(x, f, extmod='per', shift=np.array([[0], [0]])):
     """EFILTER2   2D Filtering with edge handling (via extension)
 
     y = efilter2(x, f, [extmod], [shift])
@@ -1541,12 +1542,12 @@ def efilter2(x, f, extmod='per', shift=array([[0], [0]])):
     See also:   EXTEND2, SEFILTER2"""
 
     # Periodized extension
-    sf = (array(f.shape) - 1) / 2.0
+    sf = (np.array(f.shape) - 1) / 2.0
 
-    xext = extend2(x, floor(sf[0]) +
-                   shift[0, 0], ceil(sf[0]) -
-                   shift[0, 0], floor(sf[1]) +
-                   shift[1, 0], ceil(sf[1]) -
+    xext = extend2(x, np.floor(sf[0]) +
+                   shift[0, 0], np.ceil(sf[0]) -
+                   shift[0, 0], np.floor(sf[1]) +
+                   shift[1, 0], np.ceil(sf[1]) -
                    shift[1, 0], extmod)
 
     # Convolution and keep the central part that has the size as the input
@@ -1581,7 +1582,7 @@ def extend2(x, ru, rd, cl, cr, extmod):
 
     See also:   FBDEC"""
 
-    rx, cx = array(x.shape)
+    rx, cx = np.array(x.shape)
 
     def extmodPer():
         I = getPerIndices(rx, ru, rd)
@@ -1594,8 +1595,8 @@ def extend2(x, ru, rd, cl, cr, extmod):
 
     def extmodQper_row():
         rx2 = round(rx / 2.0)
-        y = c_[r_[x[rx2:rx, cx - cl:cx], x[0:rx2, cx - cl:cx]],
-               x, r_[x[rx2:rx, 0:cr], x[0:rx2, 0:cr]]]
+        y = np.c_[np.r_[x[rx2:rx, cx - cl:cx], x[0:rx2, cx - cl:cx]],
+               x, np.r_[x[rx2:rx, 0:cr], x[0:rx2, 0:cr]]]
         I = getPerIndices(rx, ru, rd)
         y = y[I, :]
 
@@ -1603,8 +1604,8 @@ def extend2(x, ru, rd, cl, cr, extmod):
 
     def extmodQper_col():
         cx2 = round(cx / 2.0)
-        y = r_[c_[x[rx - ru:rx, cx2:cx], x[rx - ru:rx, 0:cx2]],
-               x, c_[x[0:rd, cx2:cx], x[0:rd, 0:cx2]]]
+        y = np.r_[np.c_[x[rx - ru:rx, cx2:cx], x[rx - ru:rx, 0:cx2]],
+               x, np.c_[x[0:rd, cx2:cx], x[0:rd, 0:cx2]]]
 
         I = getPerIndices(cx, cl, cr)
         y = y[:, I]
@@ -1626,9 +1627,9 @@ def extend2(x, ru, rd, cl, cr, extmod):
 
 
 def getPerIndices(lx, lb, le):
-    I = r_[arange(lx - lb + 1, lx + 1), arange(1, lx + 1), arange(1, le + 1)]
+    I = np.r_[np.arange(lx - lb + 1, lx + 1), np.arange(1, lx + 1), np.arange(1, le + 1)]
     if (lx < lb) or (lx < le):
-        I = mod(I, lx)
+        I = np.mod(I, lx)
         I[I == 0] = lx
     I = I - 1
 
@@ -1665,7 +1666,7 @@ def pdown(x, type, phase=0):
         if phase == 0:
             y = resamp(x[::2], 2)
         else:
-            y = resamp(x[1::2, r_[1:len(x), 0]], 2)
+            y = resamp(x[1::2, np.r_[1:len(x), 0]], 2)
 
         return y
 
@@ -1681,7 +1682,7 @@ def pdown(x, type, phase=0):
         if phase == 0:
             y = resamp(x[:, ::2], 0)
         else:
-            y = resamp(x[r_[1:len(x), 0], 1::2], 0)
+            y = resamp(x[np.r_[1:len(x), 0], 1::2], 0)
 
         return y
 
@@ -1743,16 +1744,16 @@ def pup(x, type, phase=0):
     m, n = x.shape
 
     def type0():  # P0 = R0 * Q0 = D0 * R2
-        y = zeros((2 * m, n))
+        y = np.zeros((2 * m, n))
         if phase == 0:
             y[::2] = resamp(x, 3)
         else:
-            y[1::2, r_[1:len(y), 0]] = resamp(x, 3)
+            y[1::2, np.r_[1:len(y), 0]] = resamp(x, 3)
 
         return y
 
     def type1():  # P1 = R1 * Q1 = D0 * R3
-        y = zeros((2 * m, n))
+        y = np.zeros((2 * m, n))
         if phase == 0:
             y[::2] = resamp(x, 2)
         else:
@@ -1761,16 +1762,16 @@ def pup(x, type, phase=0):
         return y
 
     def type2():  # P2 = R2 * Q1 = D1 * R0
-        y = zeros((m, 2 * n))
+        y = np.zeros((m, 2 * n))
         if phase == 0:
             y[:, ::2] = resamp(x, 1)
         else:
-            y[r_[1:len(y), 0], 1::2] = resamp(x, 1)
+            y[np.r_[1:len(y), 0], 1::2] = resamp(x, 1)
 
         return y
 
     def type3():  # P3 = R3 * Q0 = D1 * R1
-        y = zeros((m, 2 * n))
+        y = np.zeros((m, 2 * n))
         if phase == 0:
             y[:, ::2] = resamp(x, 0)
         else:
@@ -1822,7 +1823,7 @@ def qdown(x, type='1r', extmod='per', phase=0):
     if phase == 0:
         y = resamp(z[::2], 2)
     else:
-        y = resamp(z[1::2, r_[1:len(z), 0]], 2)
+        y = resamp(z[1::2, np.r_[1:len(z), 0]], 2)
         return y
 
     def type1c():
@@ -1846,7 +1847,7 @@ def qdown(x, type='1r', extmod='per', phase=0):
         if phase == 0:
             y = resamp(z[:, ::2], 0)
         else:
-            y = resamp(z[r_[1:len(z), 0], 1::2], 0)
+            y = resamp(z[np.r_[1:len(z), 0], 1::2], 0)
         return y
 
     def errhandler():
@@ -1896,18 +1897,18 @@ def qup(x, type='1r', phase=0):
     m, n = x.shape
 
     def type1r():
-        z = zeros((2 * m, n))
+        z = np.zeros((2 * m, n))
 
         if phase == 0:
             z[::2] = resamp(x, 3)
         else:
-            z[1::2, r_[1:len(z), 0]] = resamp(x, 3)
+            z[1::2, np.r_[1:len(z), 0]] = resamp(x, 3)
         y = resamp(z, 0)
 
         return y
 
     def type1c():
-        z = zeros((m, 2 * n))
+        z = np.zeros((m, 2 * n))
         if phase == 0:
             z[:, ::2] = resamp(x, 0)
         else:
@@ -1917,7 +1918,7 @@ def qup(x, type='1r', phase=0):
         return y
 
     def type2r():
-        z = zeros((2 * m, n))
+        z = np.zeros((2 * m, n))
         if phase == 0:
             z[::2, :] = resamp(x, 2)
         else:
@@ -1927,11 +1928,11 @@ def qup(x, type='1r', phase=0):
         return y
 
     def type2c():
-        z = zeros((m, 2 * n))
+        z = np.zeros((m, 2 * n))
         if phase == 0:
             z[:, ::2] = resamp(x, 1)
         else:
-            z[r_[1:len(z), 0], 1::2] = resamp(x, 1)
+            z[np.r_[1:len(z), 0], 1::2] = resamp(x, 1)
         y = resamp(z, 2)
 
         return y
@@ -1975,7 +1976,7 @@ def qupz(x, type=1):
     def type1():
         x1 = resampz(x, 3)
         m, n = x1.shape
-        x2 = zeros((2 * m - 1, n))
+        x2 = np.zeros((2 * m - 1, n))
         x2[::2] = x1.copy()
         y = resampz(x2, 0)
 
@@ -1984,7 +1985,7 @@ def qupz(x, type=1):
     def type2():
         x1 = resampz(x, 2)
         m, n = x1.shape
-        x2 = zeros((2 * m - 1, n))
+        x2 = np.zeros((2 * m - 1, n))
         x2[::2] = x1.copy()
         y = resampz(x2, 1)
 
@@ -1999,7 +2000,7 @@ def qupz(x, type=1):
     return switch.get(type, errhandler)()
 
 
-def dup(x, step, phase=array([0, 0])):
+def dup(x, step, phase=np.array([0, 0])):
     """ DUP   Diagonal Upsampling
 
     y = dup(x, step, [phase])
@@ -2018,13 +2019,13 @@ def dup(x, step, phase=array([0, 0])):
 
     See also:   DDOWN"""
 
-    sx = array(x.shape)
+    sx = np.array(x.shape)
 
     if phase[0] == 'm' or phase[0] == 'M':
-        y = zeros((sx - 1) * step + 1)
+        y = np.zeros((sx - 1) * step + 1)
         y[0::step[0], 0::step[0]] = x.copy()
     else:
-        y = zeros(sx * step)
+        y = np.zeros(sx * step)
         y[phase[0]::step[0], phase[1]::step[1]] = x.copy()
 
     return y
@@ -2103,25 +2104,25 @@ def resampz(x, type, shift=1):
 
     This resampling program does NOT involve periodicity, thus it
     zero-pad and extend the matrix."""
-    sx = array(x.shape)
+    sx = np.array(x.shape)
 
     def type01():
-        y = zeros([sx[0] + abs(shift * (sx[1] - 1)), sx[1]])
+        y = np.zeros([sx[0] + abs(shift * (sx[1] - 1)), sx[1]])
         if type == 0:
-            shift1 = arange(sx[1]) * (-shift)
+            shift1 = np.arange(sx[1]) * (-shift)
         else:
-            shift1 = arange(sx[1]) * shift
+            shift1 = np.arange(sx[1]) * shift
 
         # Adjust to non-negative shift if needed
         if shift1[-1] < 0:
             shift1 = shift1 - shift1[-1]
 
         for n in xrange(sx[1]):
-            y[shift1[n] + arange(sx[0]), n] = x[:, n].copy()
+            y[shift1[n] + np.arange(sx[0]), n] = x[:, n].copy()
 
         # Finally, delete zero rows if needed
         start = 0
-        finish = array(y.shape[0])
+        finish = np.array(y.shape[0])
         while linalg.norm(y[start, :]) == 0:
             start = start + 1
 
@@ -2133,22 +2134,22 @@ def resampz(x, type, shift=1):
         return y
 
     def type23():
-        y = zeros([sx[0], sx[1] + abs(shift * (sx[0] - 1))])
+        y = np.zeros([sx[0], sx[1] + abs(shift * (sx[0] - 1))])
         if type == 2:
-            shift2 = arange(sx[0]) * (-shift)
+            shift2 = np.arange(sx[0]) * (-shift)
         else:
-            shift2 = arange(sx[0]) * shift
+            shift2 = np.arange(sx[0]) * shift
 
         # Adjust to non-negative shift if needed
         if shift2[-1] < 0:
             shift2 = shift2 - shift2[-1]
 
         for m in xrange(sx[0]):
-            y[m, shift2[m] + arange(sx[1])] = x[m, :].copy()
+            y[m, shift2[m] + np.arange(sx[1])] = x[m, :].copy()
 
         # Finally, delete zero columns if needed
         start = 0
-        finish = array(y.shape[1])
+        finish = np.array(y.shape[1])
 
         while linalg.norm(y[:, start]) == 0:
             start = start + 1
@@ -2198,7 +2199,7 @@ def resampc(x: cython.double[:, :], type: cython.int, shift: cython.int = 1, ext
 
     m: cython.int = x.shape[0]
     n: cython.int  = x.shape[1]
-    y: cython.double[:, :] = zeros(x.shape)
+    y: cython.double[:, :] = np.zeros(x.shape)
     s: cython.int = shift
 
     i: cython.int
@@ -2293,7 +2294,7 @@ def qpdec(x, type='1r'):
         y = resamp(x, 1)
         p0 = resamp(y[::2], 2)
         # inv(R2) * [0; 1] = [1; 1]
-        p1 = resamp(y[1::2, r_[1:len(y), 0]], 2)
+        p1 = resamp(y[1::2, np.r_[1:len(y), 0]], 2)
 
         return p0, p1
 
@@ -2317,7 +2318,7 @@ def qpdec(x, type='1r'):
         y = resamp(x, 3)
         p0 = resamp(y[:, ::2], 0)
         # inv(R4) * [1; 0] = [1; 1]
-        p1 = resamp(y[r_[1:len(y), 0], 1::2], 0)
+        p1 = resamp(y[np.r_[1:len(y), 0], 1::2], 0)
         return p0, p1
 
     def errhandler():
@@ -2366,15 +2367,15 @@ def qprec(p0, p1, type='1r'):
     m, n = p0.shape
 
     def type1r():  # Q1 = R2 * D1 * R3
-        y = zeros((2 * m, n))
+        y = np.zeros((2 * m, n))
         y[::2, :] = resamp(p0, 3)
-        y[1::2, r_[1:len(y), 0]] = resamp(p1, 3)
+        y[1::2, np.r_[1:len(y), 0]] = resamp(p1, 3)
         x = resamp(y, 0)
 
         return x
 
     def type1c():  # Q1 = R3 * D2 * R2
-        y = zeros((m, 2 * n))
+        y = np.zeros((m, 2 * n))
         y[:, ::2] = resamp(p0, 0)
         y[:, 1::2] = resamp(p1, 0)
         x = resamp(y, 3)
@@ -2382,16 +2383,16 @@ def qprec(p0, p1, type='1r'):
         return x
 
     def type2r():  # Q2 = R1 * D1 * R4
-        y = zeros((2 * m, n))
+        y = np.zeros((2 * m, n))
         y[::2, :] = resamp(p0, 2)
         y[1::2, :] = resamp(p1, 2)
         x = resamp(y, 1)
         return x
 
     def type2c():  # Q2 = R4 * D2 * R1
-        y = zeros((m, 2 * n))
+        y = np.zeros((m, 2 * n))
         y[:, ::2] = resamp(p0, 1)
-        y[r_[1:len(y), 0], 1::2] = resamp(p1, 1)
+        y[np.r_[1:len(y), 0], 1::2] = resamp(p1, 1)
         x = resamp(y, 2)
         return x
 
@@ -2438,7 +2439,7 @@ def ppdec(x, type):
     def type0():  # P0 = R0 * Q1 = D0 * R2
         p0 = resamp(x[::2, :], 2)
         # R0 * [0; 1] = [1; 1]
-        p1 = resamp(x[1::2, r_[1:len(x), 0]], 2)
+        p1 = resamp(x[1::2, np.r_[1:len(x), 0]], 2)
 
         return p0, p1
 
@@ -2453,7 +2454,7 @@ def ppdec(x, type):
         p0 = resamp(x[:, ::2], 0)
 
         # R2 * [1; 0] = [1; 1]
-        p1 = resamp(x[r_[1:len(x), 0], 1::2], 0)
+        p1 = resamp(x[np.r_[1:len(x), 0], 1::2], 0)
 
         return p0, p1
 
@@ -2511,28 +2512,28 @@ def pprec(p0, p1, type):
     m, n = shape(p0)
 
     def type0():    # P1 = R1 * Q1 = D1 * R3
-        x = zeros((2 * m, n))
+        x = np.zeros((2 * m, n))
         x[::2, :] = resamp(p0, 3)
-        x[1::2, r_[1:len(x), 0]] = resamp(p1, 3)
+        x[1::2, np.r_[1:len(x), 0]] = resamp(p1, 3)
 
         return x
 
     def type1():    # P2 = R2 * Q2 = D1 * R4
-        x = zeros((2 * m, n))
+        x = np.zeros((2 * m, n))
         x[::2, :] = resamp(p0, 2)
         x[1::2, :] = resamp(p1, 2)
 
         return x
 
     def type2():    # P3 = R3 * Q2 = D2 * R1
-        x = zeros((m, 2 * n))
+        x = np.zeros((m, 2 * n))
         x[:, ::2] = resamp(p0, 1)
-        x[r_[1:len(x), 0], 1::2] = resamp(p1, 1)
+        x[np.r_[1:len(x), 0], 1::2] = resamp(p1, 1)
 
         return x
 
     def type3():    # P4 = R4 * Q1 = D2 * R2
-        x = zeros((m, 2 * n))
+        x = np.zeros((m, 2 * n))
         x[:, ::2] = resamp(p0, 0)
         x[:, 1::2] = resamp(p1, 0)
 
@@ -2586,12 +2587,12 @@ def ld2quin(beta):
         print('The input must be an 1-D filter')
 
     # Make sure beta is a row vector
-    beta = beta.flatten(1)[:, newaxis].T
+    beta = beta.flatten(1)[:, np.newaxis].T
 
-    lf = size(beta)
+    lf = np.size(beta)
     n = lf / 2.0
 
-    if n != floor(n):
+    if n != np.floor(n):
         print('The input allpass filter must be even length')
 
     # beta(z1) * beta(z2)
@@ -2619,25 +2620,25 @@ def mctrans(b, t):
     corresponds to the 1-D FIR filter B using the transform T."""
 
     # Convert the 1-D filter b to SUM_n a(n) cos(wn) form
-    n = (size(b) - 1) / 2.0
+    n = (np.size(b) - 1) / 2.0
     b = rot90(fftshift(rot90(b, 2)), 2)  # inverse fftshift
 
-    a = c_[b[:, 0], 2 * b[:, 1:n + 1]]
+    a = np.c_[b[:, 0], 2 * b[:, 1:n + 1]]
 
-    inset = floor((array(t.shape) - 1) / 2).astype(int)
+    inset = np.floor((np.array(t.shape) - 1) / 2).astype(int)
 
     # Use Chebyshev polynomials to compute h
     P0, P1 = 1, t.copy()
     h = a[:, 1] * P1
-    rows, cols = array([inset[0]]), array([inset[1]])
+    rows, cols = np.array([inset[0]]), np.array([inset[1]])
     h[rows, cols] = h[rows, cols] + a[:, 0] * P0
     for i in xrange(2, n + 1):
         P2 = 2 * signal.convolve(t, P1)
         rows = rows + inset[0]
         cols = cols + inset[1]
         P2[ix_(rows, cols)] = P2[ix_(rows, cols)] - P0
-        rows = inset[0] + arange(0, P1.shape[0])
-        cols = inset[1] + arange(0, P1.shape[1])
+        rows = inset[0] + np.arange(0, P1.shape[0])
+        cols = inset[1] + np.arange(0, P1.shape[1])
         hh = h.copy()
         h = a[:, i] * P2
         h[ix_(rows, cols)] = h[ix_(rows, cols)] + hh
@@ -2647,7 +2648,7 @@ def mctrans(b, t):
     return h
 
 
-def modulate2(x, type, center=array([[0, 0]])):
+def modulate2(x, type, center=np.array([[0, 0]])):
     """ MODULATE2 2D modulation
     y = modulate2(x, type, [center])
 
@@ -2657,11 +2658,11 @@ def modulate2(x, type, center=array([[0, 0]])):
     floor(size(x)/2)+center(default is [0, 0])"""
 
     # Size and origin
-    s = array([x.shape])
-    o = floor(s / 2.0) + center
+    s = np.array([x.shape])
+    o = np.floor(s / 2.0) + center
 
-    n1 = array([arange(0, s[:, 0])]) - o[:, 0]
-    n2 = array([arange(0, s[:, 1])]) - o[:, 1]
+    n1 = np.array([np.arange(0, s[:, 0])]) - o[:, 0]
+    n2 = np.array([np.arange(0, s[:, 1])]) - o[:, 1]
 
     def do_r():
         m1 = (-1)**n1
@@ -2797,7 +2798,7 @@ def smothborder(x, n):
     Note: This function provides a simple way to avoid border effect."""
 
     # Hamming window of size 2N
-    w = array([0.54 - 0.46 * cos(2 * pi * arange(0, 2 * n) / (2 * n - 1))])
+    w = np.array([0.54 - 0.46 * cos(2 * pi * np.arange(0, 2 * n) / (2 * n - 1))])
 
     if x.ndim == 1:
         W = ones((1, x.size))
@@ -2821,6 +2822,469 @@ def smothborder(x, n):
 
     return y
 
+def computescale(subband_dfb, ratio, start, end, mode):
+    """
+    COMPUTESCALE   Compute display scale for PDFB coefficients
+
+    computescale(subband_dfb, [ratio, start, end, mode])
+
+    Input:
+
+    subband_dfb:
+        A multidimentional list, one for each layer of subband images from DFB.
+    Each subband is represented as a numpy array
+    ratio:
+    Display ratio. It ranges from 1.2 to 10.
+
+    start:
+    Starting index of the cell vector subband_dfb for the computation.
+    Its default value is 1.
+
+    end:
+    Ending index of the cell vector subband_dfb for the computation.
+    Its default value is the length of subband_dfb.
+
+    mode:
+    coefficients mode (a string):
+    'real' ----  Highpass filters use the real coefficients.
+    'abs' ------ Highpass filters use the absolute coefficients.
+    It's the default value
+    Output:
+    Scales ----- 1 X 2 list for two scales.
+
+   See also:     SHOWPDFB"""
+
+    if not isinstance(subband_dfb, list):
+        print('Error in computescale.py! The first input must be a cell vector')
+
+    # Display ratio
+    if ratio is None:
+        ratio = 2
+    elif ratio < 1:
+        print('Warning! the display ratio must be larger than 1!' +
+              'Its defualt value is 2!')
+
+    # Starting index for the cell vector subband_dfb
+    if start is None:
+        start = 0
+    elif start < 0 or start > len(subband_dfb):
+        print('Warning! The starting index from 0 to length(subband_dfb)!' +
+              'Its defualt value is 0!')
+        start = 0
+
+    # Starting index for the cell vector subband_dfb
+    if end is None:
+        end = len(subband_dfb)
+    elif end < 0 or end > len(subband_dfb):
+        print('Warning! The ending index from 1 to length(subband_dfb)!' +
+              'Its default value is length(subband_dfb)!')
+        end = len(subband_dfb)
+
+    # Coefficient mode
+    if mode is None:
+        mode = 'abs'
+    elif mode != 'real' and mode != 'abs':
+        print('Warning! There are only two coefficients mode: real, abs!' +
+              'Its default value is "abs"!')
+        mode = 'abs'
+
+    # Initialization
+    sum = 0
+    mean = 0
+    real_min = 1.0e14
+    real_max = -1.0e14
+    abs_min = 1.0e14
+    abs_max = -1.0e14
+    abs_sum = 0
+    count = 0
+    scales = np.zeros((1, 2))
+
+    if mode == 'real':  # Use the real coefficients
+        # Compute the mean of all coefficients
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list):
+                m = len(subband_dfb[i])
+                for j in range(m):
+
+                    subband_min = subband_dfb[i][j].min()
+                    if subband_min < real_min:
+                        real_min = subband_min
+
+                    subband_max = subband_dfb[i][j].max()
+                    if subband_max > real_max:
+                        real_max = subband_max
+
+                    sum = sum + np.sum(subband_dfb[i][j])
+                    count = count + subband_dfb[i][j].size
+            else:
+                subband_min = subband_dfb[i].min()
+                if subband_min < real_min:
+                    real_min = subband_min
+
+                subband_max = subband_dfb[i].max()
+                if subband_max > real_max:
+                    real_max = subband_max
+
+                sum = sum + np.sum(subband_dfb[i])
+                count = count + subband_dfb[i].size
+
+        if count < 2 or abs(sum) < 1e-10:
+            print('Error in computescale.m! No data in this unit!')
+        else:
+            mean = sum / count
+
+        # Compute the STD.
+        sum = 0
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list):
+                m = len(subband_dfb[i])
+                for j in range(m):
+                    sum = sum + sum((subband_dfb[i][j] - mean)**2)
+            else:
+                sum = sum + sum((subband_dfb[i] - mean)**2)
+
+        std = math.sqrt(sum / (count - 1))
+
+        scales[0] = max(mean - ratio * std, real_min)
+        scales[1] = min(mean + ratio * std, real_max)
+
+    else:  # Use the absolute coefficients
+        # Compute the mean of absolute values
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list):
+                m = len(subband_dfb[i])
+                for j in range(m):
+
+                    subband_min = abs(subband_dfb[i][j]).min()
+                    if subband_min < abs_min:
+                        abs_min = subband_min
+
+                    subband_max = abs(subband_dfb[i][j]).max()
+                    if subband_max > abs_max:
+                        abs_max = subband_max
+
+                abs_sum = abs_sum + np.sum(abs(subband_dfb[i][j]))
+                count = count + subband_dfb[i][j].size
+            else:
+                subband_min = abs(subband_dfb[i]).min()
+                if subband_min < abs_min:
+                    abs_min = subband_min
+
+                subband_max = abs(subband_dfb[i]).max()
+
+                if subband_max > abs_max:
+                    abs_max = subband_max
+
+                abs_sum = abs_sum + np.sum(abs(subband_dfb[i]))
+                count = count + subband_dfb[i].size
+
+        if count < 2 or abs_sum < 1e-10:
+            print('Error in computescale! No data in this unit!')
+        else:
+            abs_mean = abs_sum / count
+
+        # Compute the std of absolute values
+        sum = 0
+        for i in range(start, end):
+            if isinstance(subband_dfb[i], list):
+                m = len(subband_dfb[i])
+                for j in range(m):
+                    sum = sum + np.sum((abs(subband_dfb[i][j]) - abs_mean)**2)
+            else:
+                sum = sum + np.sum((abs(subband_dfb[i]) - abs_mean)**2)
+
+        std = math.sqrt(sum / (count - 1))
+
+        # Compute the scale values
+        scales[0] = max(abs_mean - ratio * std, abs_min)
+        scales[1] = min(abs_mean + ratio * std, abs_max)
+
+    return scales
+
+def dfbimage(y, gap, gridI):
+    """ DFBIMAGE    Produce an image from the result subbands of DFB
+
+    im = dfbimage(y, [gap, gridI])
+
+    Input:
+    y:	output from DFBDEC
+    gap:	gap (in pixels) between subbands
+    gridI:	intensity of the grid that fills in the gap
+
+    Output:
+    im:	an image with all DFB subbands
+
+    The subband images are positioned as follows
+    (for the cases of 4 and 8 subbands):
+
+    0   1              0   2
+             and       1   3
+    2   3             4 5 6 7
+
+ History:
+   09/17/2003  Creation.
+   03/31/2004  Change the arrangement of the subbands to highlight
+               the tree structure of directional partition """
+    # Gap between subbands
+    if gap is None:
+        gap = 0
+
+    l = len(y)
+
+    # Intensity of the grid (default is white)
+    if gridI is None:
+        gridI = 0
+        for k in range(0, l):
+            m = np.abs(y[k]).max()
+            # m = Inf;
+            if m > gridI:
+                gridI = m
+
+    # gridI = gridI * 1.1;     # add extra 10% of intensity
+
+    # Add grid seperation if required
+    if gap > 0:
+        for k in range(0, l):
+            y[k][0:gap, :] = gridI
+            y[k][:, 0:gap] = gridI
+
+    # Simple case, only 2 subbands
+    if l == 2:
+        im = np.r_[y[0], y[1]]
+        return im
+
+    # Assume that the first subband has "horizontal" shape
+    m, n = y[0].shape
+
+    # The image
+    im = np.zeros((l * m / 2, 2 * n))
+
+    # First half of subband images ("horizontal" ones)
+    for k in range(0, (l / 4)):
+        im[np.arange(0, m) + k * m, :] = np.c_[y[k], y[(l / 4) + k]]
+
+    # Second half of subband images ("vertical" ones)
+    # The size of each of those subband
+    # It must be that: p = l*m/4  and n = l*q/4
+    p, q = y[l / 2 + 1].shape
+
+    for k in range(0, (l / 2)):
+        im[p::, np.arange(0, q) + k * q] = y[(l / 2) + k]
+
+    # Finally, grid line in bottom and left
+    # if gap > 0:
+    # im(end-gap+1:end, :) = gridI
+    # im(:, end-gap+1:end) = gridI
+
+    return im
+
+def vec2pdfb(c, s):
+    """ VEC2PDFB   Convert the vector form to the output structure of the PDFB
+
+       y = vec2pdfb(c, s)
+
+       Input:
+       c:  1-D vector that contains all PDFB coefficients
+       s:  structure of PDFB output
+
+       Output:
+       y:  PDFB coefficients in cell vector format that can be used in pdfbrec
+
+       See also:	PDFB2VEC, PDFBREC"""
+
+    # Copy the coefficients from c to y according to the structure s
+    n = s[-1, 1]      # number of pyramidal layers
+    y = [[None]] * n
+
+    # Variable that keep the current position
+    pos = np.prod(s[0, 2::])
+    y[0] = c[0:pos].reshape(s[0, 2::])
+    # Used for row index of s
+    ind = 1
+
+    for l in range(1, n):
+        # Number of directional subbands in this layer
+        print(l)
+        print(s)
+        nd = len((s[:, 0] == l).nonzero())
+        print(nd)
+        y[l] = [[None]] * nd
+        for d in range(0, nd):
+            # Size of this subband
+            p = s[ind + d, 2]
+            q = s[ind + d, 3]
+            ss = p * q
+            y[l][d] = c[pos + np.arange(0, ss)].reshape([p, q])
+            pos = pos + ss
+        ind = ind + nd
+
+    return y
+
+def pdfb2vec(y):
+    """ PDFB2VEC   Convert the output of the PDFB into a vector form
+
+    [c, s] = pdfb2vec(y)
+
+    Input:
+    y:  an output of the PDFB
+
+    Output:
+    c:  1-D vector that contains all PDFB coefficients
+    s:  structure of PDFB output, which is a four-column matrix.  Each row
+    of s corresponds to one subband y{l}{d} from y, in which the first two
+    entries are layer index l and direction index d and the last two
+    entries record the size of y{l}{d}.
+
+    See also:	PDFBDEC, VEC2PDFB"""
+
+    n = len(y)
+
+    # Save the structure of y into s
+    temp = a[0].shape
+    s = []
+    s.append([0, 0, temp[0], temp[1]])
+
+    # Used for row index of s
+    ind = 0
+    for l in range(1, n):
+        nd = len(y[l])
+        for d in range(0, nd):
+            temp = y[l][d].shape
+            s.extend([[l, d, temp[0], temp[1]]])
+    ind = ind + nd
+
+    s = np.array(s)
+    # The total number of PDFB coefficients
+    nc = sum(np.prod(s[:, 2::], axis=1))
+    # Assign the coefficients to the vector c
+    c = np.zeros(nc)
+
+    # Variable that keep the current position
+    pos = np.prod(y[0].shape)
+
+    # Lowpass subband
+    c[0:pos] = y[0].flatten('F')
+
+    # Bandpass subbands
+    for l in range(1, n):
+        for d in range(0, len(y[l])):
+            ss = np.prod(y[l][d].shape)
+            c[pos + np.arange(0, ss)] = y[l][d].flatten('F')
+            pos = pos + ss
+
+    return c, s
+
+def pdfbdec(x, pfilt, dfilt, nlevs):
+    """'function y = pdfbdec(x, pfilt, dfilt, nlevs)
+    % PDFBDEC   Pyramidal Directional Filter Bank (or Contourlet) Decomposition
+    %
+    %	y = pdfbdec(x, pfilt, dfilt, nlevs)
+    %
+    % Input:
+    %   x:      input image
+    %   pfilt:  filter name for the pyramidal decomposition step
+    %   dfilt:  filter name for the directional decomposition step
+    %   nlevs:  vector of numbers of directional filter bank decomposition levels
+    %           at each pyramidal level (from coarse to fine scale).
+    %           If the number of level is 0, a critically sampled 2-D wavelet
+    %           decomposition step is performed.
+    %
+    % Output:
+    %   y:      a cell vector of length length(nlevs) + 1, where except y{1} is
+    %           the lowpass subband, each cell corresponds to one pyramidal
+    %           level and is a cell vector that contains bandpass directional
+    %           subbands from the DFB at that level.
+    %
+    % Index convention:
+    %   Suppose that nlevs = [l_J,...,l_2, l_1], and l_j >= 2.
+    %   Then for j = 1,...,J and k = 1,...,2^l_j
+    %       y{J+2-j}{k}(n_1, n_2)
+    %   is a contourlet coefficient at scale 2^j, direction k, and position
+    %       (n_1 * 2^(j+l_j-2), n_2 * 2^j) for k <= 2^(l_j-1),
+    %       (n_1 * 2^j, n_2 * 2^(j+l_j-2)) for k > 2^(l_j-1).
+    %   As k increases from 1 to 2^l_j, direction k rotates clockwise from
+    %   the angle 135 degree with uniform increment in cotan, from -1 to 1 for
+    %   k <= 2^(l_j-1), and then uniform decrement in tan, from 1 to -1 for
+    %   k > 2^(l_j-1).
+    %
+    % See also:	PFILTERS, DFILTERS, PDFBREC"""
+
+    if len(nlevs) == 0:
+        y = [x]
+    else:
+        # Get the pyramidal filters from the filter name
+        h, g = pfilters(pfilt)
+        if nlevs[-1] != 0:
+            # Laplacian decomposition
+            xlo, xhi = lpdec(x, h, g)
+            # DFB on the bandpass image
+            if dfilt == 'pkva6' or dfilt == 'pkva8' or dfilt == 'pkva12' or dfilt == 'pkva':
+                # Use the ladder structure (whihc is much more efficient)
+                xhi_dir = dfbdec_l(xhi, dfilt, nlevs[-1])
+            else:
+                # General case
+                xhi_dir = dfbdec(xhi, dfilt, nlevs[-1])
+
+        else:
+            # Special case: nlevs(end) == 0
+            # Perform one-level 2-D critically sampled wavelet filter bank
+            xlo, xLH, xHL, xHH = wfb2dec(x, h, g)
+            xhi_dir = [xLH]
+            xhi_dir.append(xHL)
+            xhi_dir.append(xHH)
+
+        # Recursive call on the low band
+        ylo = pdfbdec(xlo, pfilt, dfilt, nlevs[0:-1])
+
+        # Add bandpass directional subbands to the final output
+        y = ylo[:]
+        y.append(xhi_dir)
+    return y
+
+def pdfbrec(y, pfilt, dfilt):
+    """
+    % PDFBREC   Pyramid Directional Filterbank Reconstruction
+    %
+    %	x = pdfbrec(y, pfilt, dfilt)
+    %
+    % Input:
+    %   y:	    a cell vector of length n+1, one for each layer of
+    %           subband images from DFB, y{1} is the low band image
+    %   pfilt:  filter name for the pyramid
+    %   dfilt:  filter name for the directional filter bank
+    %
+    % Output:
+    %   x:      reconstructed image
+    %
+    % See also: PFILTERS, DFILTERS, PDFBDEC"""
+
+    n = len(y) - 1
+
+    if n <= 0:
+        x = y[0]
+    else:
+        #Recursive call to reconstruct the low band
+        xlo = pdfbrec(y[0:-1], pfilt, dfilt)
+        #Get the pyramidal filters from the filter name
+        h, g = pfilters(pfilt)
+        #Process the detail subbands
+        if len(y[-1]) != 3:
+            # Reconstruct the bandpass image from DFB
+            # Decide the method based on the filter name
+
+            if dfilt == 'pkva6' or dfilt == 'pkva8' or dfilt == 'pkva12' or dfilt == 'pkva':
+                # Use the ladder structure(much more efficient)
+                xhi = dfbrec_l(y[-1], dfilt)
+            else:
+                # General case
+                xhi = dfbrec(y[-1], dfilt)
+            x = lprec(xlo, xhi, h, g)
+        else:
+            # Special case: length(y{end}) == 3
+            # Perform one - level 2 - D critically sampled wavelet filter bank
+            x = wfb2rec(xlo, y[-1][0], y[-1][1], y[-1][2], h, g)
+    return x
+
 
 def snr(im, est):
     """Encuentra la SNR entre la imagen de entrada (in) y la estimada (est) en
@@ -2828,27 +3292,27 @@ def snr(im, est):
     Referencia: Vetterly & Kovacevic, "Wavelets and Subband Coding", p. 386"""
 
     error = im - est
-    r = 10 * log10(var(im) / mean(abs(error)**2))
+    r = 10 * np.log10(np.var(im) / np.mean(abs(error)**2))
     return r
 
 
 #a = random.rand(1024,1024)
-#a = arange(1,1025).reshape(32,32)
-a = arange(1, 1025).reshape(32, 32)
+#a = np.arange(1,1025).reshape(32,32)
+#a = np.arange(1, 1025).reshape(32, 32)
 #tic = time.clock()
-#y = dup(a,array([2,2]),'m')
+#y = dup(a,np.array([2,2]),'m')
 #toc = time.clock()
 # print toc - tic
 # print y
 #b = qdown(y,2)
 # print b
+#pdb.set_trace()
+#y = dfbdec_l(a, 'haar', 0)
+#print(y)
 # pdb.set_trace()
-y = dfbdec_l(a, 'haar', 0)
-print(y)
-# pdb.set_trace()
-z = dfbrec_l(y, 'haar')
-print(z[31:], z.shape)
-print(snr(a, z))
+#z = dfbrec_l(y, 'haar')
+#print(z[31:], z.shape)
+#print(snr(a, z))
 # 'haar': filterHaar,
 #             'vk': filterVk,
 #             'ko': filterKo,
@@ -2873,7 +3337,7 @@ print(snr(a, z))
 #              'dmaxflat6': filterDmaxflat6,
 #              'dmaxflat7': filterDmaxflat7}
 
-#h, g = pfilters('haar')
+#h, g = pfilters('9-7')
 #print(h, h.shape)
 #print(g, g.shape)
 #pdb.set_trace()
