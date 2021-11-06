@@ -264,17 +264,17 @@ def dfbdec(x, fname, n):
         # Fan filters from diamond filters
         f0, f1 = ffilters(h0, h1)
         # Now expand the rest of the tree
-        for l in xrange(3, n + 1):
+        for l in range(3, n + 1):
             # Allocate space for the new subband outputs
             y_old = y[:]
             y = [[None]] * 2**l
             # The first half channels use R1 and R2
-            for k in xrange(0, 2**(l - 2)):
+            for k in range(0, 2**(l - 2)):
                 i = np.mod(k, 2)
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
-            for k in xrange(2**(l - 2), 2**(l - 1)):
+            for k in range(2**(l - 2), 2**(l - 1)):
                 i = np.mod(k, 2) + 2
                 y[2 * k], y[2 * k + 1] = fbdec(y_old[k],
                                                f0[i], f1[i], 'pq', i, 'per')
@@ -338,17 +338,17 @@ def dfbrec(y, fname):
         f0, f1 = ffilters(h0, h1)
 
         # Recombine subband outputs to the next level
-        for l in xrange(n, 2, -1):
+        for l in range(n, 2, -1):
             y_old = y[:]
             y = [[None]] * 2**(l - 1)
 
             # The first half channels use R1 and R2
-            for k in xrange(0, 2**(l - 2)):
+            for k in range(0, 2**(l - 2)):
                 i = np.mod(k, 2)
                 y[k] = fbrec(y_old[2 * k], y_old[2 * k + 1],
                              f0[i], f1[i], 'pq', i, 'per')
             # The second half channels use R3 and R4
-            for k in xrange(2**(l - 2), 2**(l - 1)):
+            for k in range(2**(l - 2), 2**(l - 1)):
                 i = np.mod(k, 2) + 2
                 y[k] = fbrec(y_old[2 * k], y_old[2 * k + 1],
                              f0[i], f1[i], 'pq', i, 'per')
@@ -406,19 +406,19 @@ def dfbdec_l(x, f, n):
         y[3], y[2] = fbdec_l(x1, f.copy(), 'q', '2c', 'per')
 
         # Now expand the rest of the tree
-        for l in xrange(3, n + 1):
+        for l in range(3, n + 1):
             # Allocate space for the new subband outputs
             y_old = y[:]
             y = [[None]] * 2**l
 
             # The first half channels use R1 and R2
-            for k in xrange(0, 2**(l - 2)):
+            for k in range(0, 2**(l - 2)):
                 i = np.mod(k, 2)
                 y[2 * k + 1], y[2 *
                                 k] = fbdec_l(y_old[k], f.copy(), 'p', i, 'per')
 
                 # The second half channels use R3 and R4
-            for k in xrange(2**(l - 2), 2**(l - 1)):
+            for k in range(2**(l - 2), 2**(l - 1)):
                 i = np.mod(k, 2) + 2
                 y[2 * k + 1], y[2 *
                                 k] = fbdec_l(y_old[k], f.copy(), 'p', i, 'per')
@@ -472,17 +472,17 @@ def dfbrec_l(y, f):
     else:
         # For the cases that n >= 2
         # Recombine subband outputs to the next level
-        for l in xrange(n, 2, -1):
+        for l in range(n, 2, -1):
             y_old = y[:]
             y = [[None]] * 2**(l - 1)
 
             # The first half channels use R0 and R1
-            for k in xrange(0, 2**(l - 2)):
+            for k in range(0, 2**(l - 2)):
                 i = np.mod(k, 2)
                 y[k] = fbrec_l(y_old[2 * k + 1], y_old[2 * k],
                                f.copy(), 'p', i, 'per')
             # The second half channels use R2 and R3
-            for k in xrange(2**(l - 2), 2**(l - 1)):
+            for k in range(2**(l - 2), 2**(l - 1)):
                 i = np.mod(k, 2) + 2
                 y[k] = fbrec_l(y_old[2 * k + 1], y_old[2 * k],
                                f.copy(), 'p', i, 'per')
@@ -1174,13 +1174,13 @@ def dfilters(fname, type):
         m, n = 2, 2
         w = empty([5, 5])
         w1d = kaiser(4 * m + 1, 2.6)
-        for n1 in xrange(-m, m + 1):
-            for n2 in xrange(-n, n + 1):
+        for n1 in range(-m, m + 1):
+            for n2 in range(-n, n + 1):
                 w[n1 + m, n2 + n] = w1d[2 * m + n1 + n2] * w1d[2 * m + n1 - n2]
 
         h = empty([5, 5])
-        for n1 in xrange(-m, m + 1):
-            for n2 in xrange(-n, n + 1):
+        for n1 in range(-m, m + 1):
+            for n2 in range(-n, n + 1):
                 h[n1 + m, n2 + n] = .5 * \
                     sinc((n1 + n2) / 2.0) * .5 * sinc((n1 - n2) / 2.0)
 
@@ -2117,7 +2117,7 @@ def resampz(x, type, shift=1):
         if shift1[-1] < 0:
             shift1 = shift1 - shift1[-1]
 
-        for n in xrange(sx[1]):
+        for n in range(sx[1]):
             y[shift1[n] + np.arange(sx[0]), n] = x[:, n].copy()
 
         # Finally, delete zero rows if needed
@@ -2144,7 +2144,7 @@ def resampz(x, type, shift=1):
         if shift2[-1] < 0:
             shift2 = shift2 - shift2[-1]
 
-        for m in xrange(sx[0]):
+        for m in range(sx[0]):
             y[m, shift2[m] + np.arange(sx[1])] = x[m, :].copy()
 
         # Finally, delete zero columns if needed
@@ -2632,7 +2632,7 @@ def mctrans(b, t):
     h = a[:, 1] * P1
     rows, cols = np.array([inset[0]]), np.array([inset[1]])
     h[rows, cols] = h[rows, cols] + a[:, 0] * P0
-    for i in xrange(2, n + 1):
+    for i in range(2, n + 1):
         P2 = 2 * signal.convolve(t, P1)
         rows = rows + inset[0]
         cols = cols + inset[1]
@@ -2724,13 +2724,13 @@ def backsamp(y):
     if n == 1:
         # One level, the decomposition filterbank shoud be Q1r
         # Undo the last resampling (Q1r = R1 * D0 * R2)
-        for k in xrange(0, 2):
+        for k in range(0, 2):
             y[k] = resamp(y[k], 3)
             y[k][:, 0::2] = resamp(y[k][:, 0::2], 0)
             y[k][:, 1::2] = resamp(y[k][:, 1::2], 0)
     elif n > 2:
         N = 2**(n - 1)
-        for k in xrange(0, 2**(n - 2)):
+        for k in range(0, 2**(n - 2)):
             shift = 2 * (k + 1) - (2**(n - 2) + 1)
             # The first half channels
             y[2 * k] = resamp(y[2 * k], 2, shift)
@@ -2763,13 +2763,13 @@ def rebacksamp(y):
     if n == 1:
         # One level, the reconstruction filterbank shoud be Q1r
         # Redo the first resampling (Q1r = R1 * D0 * R2)
-        for k in xrange(0, 2):
+        for k in range(0, 2):
             y[k][:, ::2] = resamp(y[k][:, ::2], 1)
             y[k][:, 1::2] = resamp(y[k][:, 1::2], 1)
             y[k] = resamp(y[k], 2)
     elif n > 2:
         N = 2**(n - 1)
-        for k in xrange(0, 2**(n - 2)):
+        for k in range(0, 2**(n - 2)):
             shift = 2 * (k + 1) - (2**(n - 2) + 1)
             # The first half channels
             y[2 * k] = resamp(y[2 * k], 2, -shift)
